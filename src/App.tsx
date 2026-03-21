@@ -121,38 +121,38 @@ export default function App() {
 		setTimeout(() => setShowToast(false), 4000)
 	}
 
-const handleApprove = async (id: string) => {
-                try {
-                        await fetch(`${API_URL}/api/changes/${id}/status`, {
-                                method: 'PATCH',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ status: 'approved' })
-                        })
-                        setChangesList((prev) =>
-                                prev.map((c) => (c.id === id ? { ...c, status: "approved" } : c))
-                        )
-                } catch (e) {
-                         console.error('Failed to approve', e) 
-                }
-        }
+	const handleApprove = async (id: string) => {
+		try {
+			await fetch(`${API_URL}/api/changes/${id}/status`, {
+				method: "PATCH",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ status: "approved" })
+			})
+			setChangesList((prev) =>
+				prev.map((c) => (c.id === id ? { ...c, status: "approved" } : c))
+			)
+		} catch (e) {
+			console.error("Failed to approve", e)
+		}
+	}
 
-        const handleReject = async (id: string) => {
-                try {
-                        await fetch(`${API_URL}/api/changes/${id}/status`, {
-                                method: 'PATCH',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ status: 'rejected' })
-                        })
-                        setChangesList((prev) => prev.filter((c) => c.id !== id))
-                } catch (e) {
-                         console.error('Failed to reject', e) 
-                }
+	const handleReject = async (id: string) => {
+		try {
+			await fetch(`${API_URL}/api/changes/${id}/status`, {
+				method: "PATCH",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ status: "rejected" })
+			})
+			setChangesList((prev) => prev.filter((c) => c.id !== id))
+		} catch (e) {
+			console.error("Failed to reject", e)
+		}
 	}
 
 	const filteredByDate = changesList.filter((change) => {
 		if (dateFilter === "all") return true
 
-		const lowerDate = (change.date || 'latest').toLowerCase()
+		const lowerDate = (change.date || "latest").toLowerCase()
 
 		if (dateFilter === "today") {
 			return lowerDate === "today" || lowerDate === "just now"
