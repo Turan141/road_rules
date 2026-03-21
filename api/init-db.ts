@@ -2,9 +2,9 @@ import type { VercelRequest, VercelResponse } from "@vercel/node"
 import { neon } from "@neondatabase/serverless"
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-	const sql = neon(process.env.DATABASE_URL!)
-
 	try {
+		if (!process.env.DATABASE_URL) return res.status(500).json({ error: 'DATABASE_URL missing' })
+		const sql = neon(process.env.DATABASE_URL)
 		await sql`
 			CREATE TABLE IF NOT EXISTS road_changes (
 				id TEXT PRIMARY KEY,
@@ -18,9 +18,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 				upvotes INTEGER DEFAULT 0
 			)
 		`
-		return res.status(200).json({ success: true, message: "Database table created successfully" })
+		return res.status(200).json({ success: true, message: 'Database table created successfully' })
 	} catch (error: any) {
 		console.error(error)
-		return res.status(500).json({ error: "Failed to create table", details: error.message })
+		return res.status(500).json({ error: 'Failed to create table', details: error.message })
 	}
 }
