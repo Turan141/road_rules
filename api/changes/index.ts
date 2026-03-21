@@ -17,7 +17,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 				const rows = await sql`SELECT * FROM road_changes ORDER BY timestamp DESC`
 				const mapped = rows.map((r: any) => ({
 					...r, type: r.type || 'other', date: r.timestamp,
-					coordinates: [r.longitude, r.latitude]
+					coordinates: [r.longitude, r.latitude], image: r.image
 				}))
 				return res.status(200).json(mapped)
 			} catch (error: any) {
@@ -35,20 +35,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 		}
 
 		if (req.method === "POST") {
-			const {
-				id,
-				title,
-				description,
-				severity,
-				status,
-				coordinates,
-				timestamp,
-				upvotes
-			} = req.body
+			const { id, title, description, severity, status, coordinates, timestamp, upvotes, image } = req.body
 			try {
+				
+				try {
+					await sql`ALTER TABLE road_changes ADD COLUMN IF NOT EXISTS image TEXT;`
+				} catch(e) {
+					console.log("Could not alter table", e)
+				}
 				await sql`
-					INSERT INTO road_changes (id, title, description, severity, status, longitude, latitude, timestamp, upvotes)
-					VALUES (${id}, ${title}, ${description}, ${severity}, ${status || "pending"}, ${coordinates[0]}, ${coordinates[1]}, ${timestamp || new Date().toISOString()}, ${upvotes || 0})
+					INSERT INTO road_changes (id, title, description, severity, status, longitude, latitude, timestamp, upvotes, image)
+					VALUES (${id}, ${title}, ${description}, ${severity}, ${status || "pending"}, ${coordinates[0]}, ${coordinates[1]}, ${timestamp || new Date().toISOString()}, ${upvotes || 0}, ${image || null})
 				`
 				return res.status(201).json({ success: true, id })
 			} catch (error: any) {

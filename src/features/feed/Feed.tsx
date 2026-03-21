@@ -11,13 +11,13 @@ export default function Feed({ changes, onSelect }: FeedProps) {
 		<div className='p-4 space-y-4 pb-24'>
 			<div className='flex flex-col mb-6 space-y-4'>
 				<h2 className='text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600'>
-					Latest Road Changes in Baku
+					Bakıda Son Yol Dəyişiklikləri
 				</h2>
 			</div>
 
 			{changes.length === 0 ? (
 				<div className='text-center py-10 text-gray-500 bg-white rounded-xl border border-gray-100 border-dashed'>
-					<p>No road changes found for this timeframe.</p>
+					<p>Bu vaxt aralığı üçün yol dəyişikliyi tapılmadı.</p>
 				</div>
 			) : (
 				changes.map((change) => (
@@ -28,17 +28,21 @@ export default function Feed({ changes, onSelect }: FeedProps) {
 					>
 						<div className='p-4'>
 							<div className='flex justify-between items-start mb-2'>
-								<span
-									className={`px-2.5 py-1 text-[10px] uppercase tracking-wider font-bold rounded-full ${
-										change.severity === "red"
-											? "bg-red-50 text-red-600 ring-1 ring-red-100"
-											: change.severity === "yellow"
-												? "bg-yellow-50 text-yellow-600 ring-1 ring-yellow-100"
-												: "bg-green-50 text-green-600 ring-1 ring-green-100"
-									}`}
-								>
-									{(change.type || 'other').replace("-", " ")}
-								</span>
+								{change.type !== "other" ? (
+									<span
+										className={`px-2.5 py-1 text-[10px] uppercase tracking-wider font-bold rounded-full ${
+											change.severity === "red"
+												? "bg-red-50 text-red-600 ring-1 ring-red-100"
+												: change.severity === "yellow"
+													? "bg-yellow-50 text-yellow-600 ring-1 ring-yellow-100"
+													: "bg-green-50 text-green-600 ring-1 ring-green-100"
+										}`}
+									>
+										{change.type.replace("-", " ")}
+									</span>
+								) : (
+									<div />
+								)}
 								<div className='flex items-center text-gray-400 text-xs font-medium'>
 									<Clock className='w-3.5 h-3.5 mr-1' />
 									{change.date}
@@ -55,7 +59,7 @@ export default function Feed({ changes, onSelect }: FeedProps) {
 
 							<div className='flex items-center text-xs text-blue-600 font-medium group'>
 								<MapPin className='w-3.5 h-3.5 mr-1 group-hover:animate-bounce' />
-								<span>Show on map</span>
+								<span>Xəritədə göstər</span>
 							</div>
 						</div>
 					</div>

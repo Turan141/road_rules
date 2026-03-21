@@ -27,7 +27,7 @@ export default function AlertBar({ change, onClose }: AlertBarProps) {
 							change.severity === "red" ? "text-red-900" : "text-yellow-900"
 						}`}
 					>
-						Warning: You are approaching a changed zone
+						Xəbərdarlıq: Dəyişdirilmiş zonaya yaxınlaşırsınız
 					</h3>
 					<p className='text-sm mt-1 text-gray-700'>{change.title}</p>
 				</div>

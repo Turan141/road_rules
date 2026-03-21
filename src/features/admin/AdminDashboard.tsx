@@ -16,8 +16,8 @@ export default function AdminDashboard({
 		return (
 			<div className='flex flex-col items-center justify-center h-full p-8 text-center text-gray-500'>
 				<Check className='w-16 h-16 text-gray-300 mb-4' />
-				<h3 className='text-xl font-bold text-gray-700'>All caught up!</h3>
-				<p className='mt-2 text-sm'>There are no pending reports to review right now.</p>
+				<h3 className='text-xl font-bold text-gray-700'>Hamısı hazırdır!</h3>
+				<p className='mt-2 text-sm'>Hazırda nəzərdən keçiriləcək gözləyən hesabat yoxdur.</p>
 			</div>
 		)
 	}
@@ -26,10 +26,10 @@ export default function AdminDashboard({
 		<div className='p-4 max-w-3xl mx-auto space-y-4 pb-24 h-full overflow-y-auto'>
 			<div className='mb-6'>
 				<h2 className='text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-700 to-indigo-600'>
-					Admin Dashboard
+					İdarəetmə Paneli
 				</h2>
 				<p className='text-sm text-gray-500'>
-					Review community submitted road rule updates
+					İcma tərəfindən təqdim edilən yol qaydaları yeniləmələrini nəzərdən keçirin
 				</p>
 			</div>
 
@@ -40,9 +40,11 @@ export default function AdminDashboard({
 				>
 					<div className='flex justify-between items-start mb-3'>
 						<div>
-							<span className='px-2 py-1 text-xs font-bold uppercase tracking-wider text-blue-800 bg-blue-100 rounded-md'>
-								{(change.type || 'other').replace("-", " ")}
-							</span>
+							{change.type !== "other" && (
+								<span className='px-2 py-1 text-xs font-bold uppercase tracking-wider text-blue-800 bg-blue-100 rounded-md'>
+									{change.type.replace("-", " ")}
+								</span>
+							)}
 							<span className='text-xs text-gray-400 ml-2'>{change.date}</span>
 						</div>
 					</div>
@@ -56,7 +58,7 @@ export default function AdminDashboard({
 							{change.coordinates[1].toFixed(4)}, {change.coordinates[0].toFixed(4)}
 						</div>
 						<button className='text-xs text-blue-600 font-medium hover:underline'>
-							View Evidence
+							Sübuta bax
 						</button>
 					</div>
 
@@ -65,13 +67,13 @@ export default function AdminDashboard({
 							onClick={() => onApprove(change.id)}
 							className='flex-1 flex items-center justify-center py-2.5 bg-green-50 text-green-700 hover:bg-green-100 font-semibold rounded-lg transition-colors border border-green-200'
 						>
-							<Check className='w-4 h-4 mr-1.5' /> Approve
+							<Check className='w-4 h-4 mr-1.5' /> Təsdiqlə
 						</button>
 						<button
 							onClick={() => onReject(change.id)}
 							className='flex-1 flex items-center justify-center py-2.5 bg-red-50 text-red-700 hover:bg-red-100 font-semibold rounded-lg transition-colors border border-red-200'
 						>
-							<X className='w-4 h-4 mr-1.5' /> Reject
+							<X className='w-4 h-4 mr-1.5' /> Rədd et
 						</button>
 					</div>
 				</div>

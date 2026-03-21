@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { RoadChange } from "./data/roadChanges";
 import MapboxMap from "./features/map/MapboxMap"
 import AlertBar from "./features/alerts/AlertBar"
 import Feed from "./features/feed/Feed"
@@ -6,7 +7,6 @@ import ReportModal from "./features/report/ReportModal"
 import AdminDashboard from "./features/admin/AdminDashboard"
 import LoginModal from "./features/auth/LoginModal"
 import { MapPin, List, Plus, ShieldAlert, LogOut, Filter } from "lucide-react"
-import { mockRoadChanges, RoadChange } from "./data/roadChanges"
 
 const API_URL = ""
 
@@ -34,7 +34,7 @@ export default function App() {
 	const [nearbyAlert, setNearbyAlert] = useState<RoadChange | null>(null)
 
 	// State for managing mock reports locally
-	const [changesList, setChangesList] = useState<RoadChange[]>(mockRoadChanges)
+	const [changesList, setChangesList] = useState<RoadChange[]>([])
 	const [showReportForm, setShowReportForm] = useState(false)
 	const [showToast, setShowToast] = useState(false)
 	const [toastMessage, setToastMessage] = useState("")
@@ -99,7 +99,7 @@ export default function App() {
 
 		setChangesList([newChange, ...changesList])
 		setShowReportForm(false)
-		setToastMessage("Report submitted for admin review")
+		setToastMessage("Hesabat admin yoxlanışı üçün göndərildi")
 		setShowToast(true)
 		setTimeout(() => setShowToast(false), 4000)
 	}
@@ -233,7 +233,7 @@ export default function App() {
 									className='text-xs font-semibold text-gray-500 hover:text-gray-800 flex items-center'
 								>
 									<LogOut className='w-4 h-4 mr-1' />
-									<span className='hidden sm:inline'>Logout</span>
+									<span className='hidden sm:inline'>Çıxış</span>
 								</button>
 							</>
 						)}
@@ -247,7 +247,7 @@ export default function App() {
 							{ id: "all", label: "All Updates" },
 							{ id: "today", label: "Today" },
 							{ id: "last-3-days", label: "Last 3 Days" },
-							{ id: "last-week", label: "Last Week" },
+							{ id: "last-week", label: "Son 1 həftə" },
 							{ id: "last-month", label: "Last Month" }
 						].map((filter) => (
 							<button
@@ -329,25 +329,6 @@ export default function App() {
 						</div>
 
 						<p className='text-gray-600 text-sm mb-4'>{activeChange.description}</p>
-
-						<div className='flex gap-4 mb-4'>
-							<div className='flex-1 bg-gray-100 rounded-lg p-3 text-center'>
-								<p className='text-xs text-gray-500 uppercase font-bold tracking-wide mb-1'>
-									Before
-								</p>
-								<div className='h-20 bg-gray-300 rounded flex items-center justify-center text-sm text-gray-600'>
-									Two-way traffic
-								</div>
-							</div>
-							<div className='flex-1 bg-red-50 rounded-lg p-3 text-center border border-red-100'>
-								<p className='text-xs text-red-500 uppercase font-bold tracking-wide mb-1'>
-									Now
-								</p>
-								<div className='h-20 bg-white border border-red-200 rounded flex items-center justify-center text-sm font-semibold text-red-700'>
-									One-way only →
-								</div>
-							</div>
-						</div>
 
 						<button
 							className='w-full py-3 bg-black text-white rounded-xl font-medium focus:ring-4 focus:ring-gray-300 transition-shadow'
