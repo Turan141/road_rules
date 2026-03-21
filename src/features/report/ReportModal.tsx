@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react"
-import { X, Upload, MapPin, Loader2, AlertCircle, ThumbsUp } from "lucide-react"
+import { X, Upload, MapPin, Loader2, AlertCircle } from "lucide-react"
 import { RoadChange } from "../../data/roadChanges"
 
 interface ReportModalProps {
@@ -28,7 +28,7 @@ function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
 export default function ReportModal({
 	onClose,
 	onSubmit,
-	onUpvote,
+	/* onUpvote */
 	selectedCoords,
 	existingChanges
 }: ReportModalProps) {
@@ -121,56 +121,48 @@ export default function ReportModal({
 
 				<div className='p-4'>
 					{/* Nearby Duplicate Reports Alert */}
-					{nearbyReports.length > 0 && (
-						<div className='mb-4 bg-orange-50 border border-orange-200 rounded-xl p-3 shadow-sm'>
-							<div className='flex items-start mb-2'>
-								<AlertCircle className='w-5 h-5 text-orange-600 mr-2 shrink-0' />
-								<div>
-									<h3 className='font-bold text-orange-900 text-sm'>
-										Similar Reports Nearby
-									</h3>
-									<p className='text-xs text-orange-800 mt-0.5 mb-2'>
-										Other users have already reported issues here. You can add your
-										confirmation instead of making a new report.
-									</p>
-								</div>
-							</div>
-							<div className='space-y-2'>
-								{nearbyReports.map((report) => (
-									<div
-										key={report.id}
-										className='bg-white border border-orange-100 p-2 rounded-lg flex items-center justify-between'
-									>
-										<div>
-											<p className='text-sm font-semibold text-gray-800'>
-												{report.title}
-											</p>
-											<p className='text-xs text-gray-500'>
-												{report.upvotes || 1} people reported this
-											</p>
-										</div>
-										{onUpvote && (
-											<button
-												type='button'
-												onClick={() => {
-													onUpvote(report.id)
-													onClose()
-												}}
-												className='ml-2 px-3 py-1.5 bg-orange-100 hover:bg-orange-200 text-orange-800 text-xs font-bold rounded-lg transition-colors flex items-center'
-											>
-												<ThumbsUp className='w-3 h-3 mr-1' />
-												Confirm
-											</button>
-										)}
+					{nearbyReports.length > 0 && (() => {
+						const limitReached = nearbyReports.some(r => (r.upvotes || 1) >= 5);
+						return (
+							<div className={'mb-4 rounded-xl p-3 shadow-sm border ' + (limitReached ? 'bg-red-50 border-red-200' : 'bg-orange-50 border-orange-200')}>
+								<div className='flex items-start mb-2'>
+									<AlertCircle className={'w-5 h-5 mr-2 shrink-0 ' + (limitReached ? 'text-red-600' : 'text-orange-600')} />
+									<div>
+										<h3 className={'font-bold text-sm ' + (limitReached ? 'text-red-900' : 'text-orange-900')}>
+											{limitReached ? 'Report Limit Reached' : 'Similar Reports Nearby'}
+										</h3>
+										<p className={'text-xs mt-0.5 mb-2 ' + (limitReached ? 'text-red-800' : 'text-orange-800')}>
+											{limitReached
+												? 'This location already has 5 or more reports and is currently restricted from new submissions.'
+												: 'Other users have already reported issues here. Please double check if yours is already here.'}
+										</p>
 									</div>
-								))}
+								</div>
+								<div className='space-y-2'>
+									{nearbyReports.map((report) => (
+										<div
+											key={report.id}
+											className={'bg-white border p-2 rounded-lg flex items-center justify-between ' + (limitReached ? 'border-red-100' : 'border-orange-100')}
+										>
+											<div>
+												<p className='text-sm font-semibold text-gray-800'>
+													{report.title}
+												</p>
+												<p className='text-xs text-gray-500'>
+													{report.upvotes || 1} people reported this
+												</p>
+											</div>
+										</div>
+									))}
+								</div>
+								{!limitReached && (
+									<div className='mt-3 text-center text-xs text-orange-600 font-medium'>
+										Or continue to submit a new report below
+									</div>
+								)}
 							</div>
-							<div className='mt-3 text-center text-xs text-orange-600 font-medium'>
-								Or continue to submit a new report below
-							</div>
-						</div>
-					)}
-
+						);
+					})()}
 					<form onSubmit={handleSubmit} className='space-y-4'>
 						<div className='bg-blue-50 text-blue-800 text-sm p-3 rounded-lg border border-blue-100 flex items-start'>
 							<MapPin className='w-4 h-4 mt-0.5 mr-2 shrink-0' />
