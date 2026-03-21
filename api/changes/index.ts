@@ -1,10 +1,12 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node"
-import { sql } from "@vercel/postgres"
+import { neon } from "@neondatabase/serverless"
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+	const sql = neon(process.env.DATABASE_URL!)
+
 	if (req.method === "GET") {
 		try {
-			const { rows } = await sql`SELECT * FROM road_changes ORDER BY timestamp DESC`
+			const rows = await sql`SELECT * FROM road_changes ORDER BY timestamp DESC`
 			const mapped = rows.map((r: any) => ({
 				...r,
 				coordinates: [r.longitude, r.latitude]

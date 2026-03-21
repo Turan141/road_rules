@@ -1,7 +1,9 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node"
-import { sql } from "@vercel/postgres"
+import { neon } from "@neondatabase/serverless"
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+	const sql = neon(process.env.DATABASE_URL!)
+
 	try {
 		await sql`
 			CREATE TABLE IF NOT EXISTS road_changes (
