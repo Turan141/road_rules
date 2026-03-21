@@ -1,0 +1,355 @@
+import { useState, useEffect } from "react"
+import MapboxMap from "./features/map/MapboxMap"
+import AlertBar from "./features/alerts/AlertBar"
+import Feed from "./features/feed/Feed"
+import ReportModal from "./features/report/ReportModal"
+import AdminDashboard from "./features/admin/AdminDashboard"
+import LoginModal from "./features/auth/LoginModal"
+import { MapPin, Navigation, List, Plus, ShieldAlert, LogOut, Filter } from "lucide-react"
+import { mockRoadChanges, RoadChange } from "./data/roadChanges"
+
+export type DateFilter = "all" | "today" | "last-3-days" | "last-week" | "last-month"
+
+export default function App() {
+	// Simple routing for demo purposes without react-router
+	const isReviewerRoute = window.location.pathname === "/reviewer"
+
+	const [isAuthenticated, setIsAuthenticated] = useState(false)
+
+	const [activeTab, setActiveTab] = useState<"map" | "feed" | "admin">("map")
+	const [userRole, setUserRole] = useState<"user" | "admin">("user")
+	const [userLocation, setUserLocation] = useState<[number, number] | null>(null)
+
+	const [dateFilter, setDateFilter] = useState<DateFilter>("all")
+
+	// Map Pin Drop States
+	const [isSelectingLocation, setIsSelectingLocation] = useState(false)
+	const [selectedReportCoords, setSelectedReportCoords] = useState<
+		[number, number] | null
+	>(null)
+
+	const [activeChange, setActiveChange] = useState<RoadChange | null>(null)
+	const [nearbyAlert, setNearbyAlert] = useState<RoadChange | null>(null)
+
+	// State for managing mock reports locally
+	const [changesList, setChangesList] = useState<RoadChange[]>(mockRoadChanges)
+	const [showReportForm, setShowReportForm] = useState(false)
+	const [showToast, setShowToast] = useState(false)
+	const [toastMessage, setToastMessage] = useState("")
+
+	// Real Geolocation
+	useEffect(() => {
+		if ("geolocation" in navigator) {
+			const watchId = navigator.geolocation.watchPosition(
+				(position) =>
+					setUserLocation([position.coords.longitude, position.coords.latitude]),
+				(error) => console.warn("Geolocation blocked or failed:", error),
+				{ enableHighAccuracy: true, maximumAge: 10000 }
+			)
+			// Mock finding user near Baku eventually if location fails for demo
+			setTimeout(() => {
+				if (!userLocation) setUserLocation([49.845, 40.375])
+			}, 5000)
+			return () => navigator.geolocation.clearWatch(watchId)
+		} else {
+			setUserLocation([49.845, 40.375]) // Fallback
+		}
+	}, [])
+
+	useEffect(() => {
+		// Example check if near an alert (mocked here, real app calculates Haversine distance)
+		const timer = setTimeout(() => {
+			setNearbyAlert(
+				changesList.find((c) => c.status === "approved" && c.severity === "red") || null
+			)
+		}, 3000)
+		return () => clearTimeout(timer)
+	}, [changesList])
+
+	const handleReportSubmit = (newChange: RoadChange) => {
+		setChangesList([newChange, ...changesList])
+		setShowReportForm(false)
+		setToastMessage("Report submitted for admin review")
+		setShowToast(true)
+		setTimeout(() => setShowToast(false), 4000)
+	}
+
+	const handleUpvote = (id: string) => {
+		setChangesList((prev) =>
+			prev.map((c) => (c.id === id ? { ...c, upvotes: (c.upvotes || 1) + 1 } : c))
+		)
+		setToastMessage("Confirmed! Thanks for verifying.")
+		setShowToast(true)
+		setTimeout(() => setShowToast(false), 4000)
+	}
+
+	const handleApprove = (id: string) => {
+		setChangesList((prev) =>
+			prev.map((c) => (c.id === id ? { ...c, status: "approved" } : c))
+		)
+	}
+
+	const handleReject = (id: string) => {
+		setChangesList((prev) => prev.filter((c) => c.id !== id))
+	}
+
+	const filteredByDate = changesList.filter((change) => {
+		if (dateFilter === "all") return true
+
+		const lowerDate = change.date.toLowerCase()
+
+		if (dateFilter === "today") {
+			return lowerDate === "today" || lowerDate === "just now"
+		}
+
+		if (dateFilter === "last-3-days") {
+			return (
+				lowerDate === "today" ||
+				lowerDate === "yesterday" ||
+				lowerDate === "just now" ||
+				lowerDate.includes("2 days") ||
+				lowerDate.includes("3 days")
+			)
+		}
+
+		if (dateFilter === "last-week") {
+			return !lowerDate.includes("month") && !lowerDate.includes("year")
+		}
+
+		if (dateFilter === "last-month") {
+			return !lowerDate.includes("year")
+		}
+
+		return true
+	})
+
+	return (
+		<div className='flex flex-col h-screen w-screen bg-gray-50 overflow-hidden font-sans text-gray-900'>
+			{/* Header */}
+			<header className='px-4 py-3 bg-white shadow-sm flex flex-col z-10 relative space-y-3'>
+				<div className='flex items-center justify-between'>
+					<div className='flex items-center space-x-2'>
+						<div className='w-8 h-8 rounded-full bg-red-600 flex items-center justify-center text-white font-bold'>
+							R
+						</div>
+						<h1 className='text-xl flex items-center font-semibold tracking-tight'>
+							RoadChange
+						</h1>
+					</div>
+					<div className='flex items-center space-x-2 sm:space-x-4'>
+						<div className='flex space-x-1 bg-gray-100 p-1 rounded-lg'>
+							<button
+								onClick={() => setActiveTab("map")}
+								className={`px-3 py-1 flex items-center space-x-1 rounded-md text-sm font-medium transition-colors ${activeTab === "map" ? "bg-white shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+							>
+								<MapPin className='w-4 h-4' />
+								<span className='hidden sm:inline'>Map</span>
+							</button>
+							<button
+								onClick={() => setActiveTab("feed")}
+								className={`px-3 py-1 flex items-center space-x-1 rounded-md text-sm font-medium transition-colors ${activeTab === "feed" ? "bg-white shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+							>
+								<List className='w-4 h-4' />
+								<span className='hidden sm:inline'>Feed</span>
+							</button>
+							{userRole === "admin" && (
+								<button
+									onClick={() => setActiveTab("admin")}
+									className={`px-3 py-1 flex items-center space-x-1 rounded-md text-sm font-medium transition-colors ${activeTab === "admin" ? "bg-white shadow-sm text-blue-600" : "text-gray-500 hover:text-gray-700"}`}
+								>
+									<ShieldAlert className='w-4 h-4' />
+									<span className='hidden sm:inline'>Review</span>
+									{changesList.filter((c) => c.status === "pending").length > 0 && (
+										<span className='ml-1 w-2 h-2 bg-red-500 rounded-full animate-pulse' />
+									)}
+								</button>
+							)}
+						</div>
+						{userRole === "admin" && (
+							<>
+								<div className='h-6 w-px bg-gray-200 hidden sm:block'></div>
+								<button
+									onClick={() => {
+										setUserRole("user")
+										setIsAuthenticated(false)
+										window.location.href = "/"
+									}}
+									className='text-xs font-semibold text-gray-500 hover:text-gray-800 flex items-center'
+								>
+									<LogOut className='w-4 h-4 mr-1' />
+									<span className='hidden sm:inline'>Logout</span>
+								</button>
+							</>
+						)}
+					</div>
+				</div>
+
+				{(activeTab === "map" || activeTab === "feed") && (
+					<div className='flex items-center space-x-2 overflow-x-auto pb-1 scrollbar-hide'>
+						<Filter className='w-4 h-4 text-gray-400 shrink-0 mr-1' />
+						{[
+							{ id: "all", label: "All Updates" },
+							{ id: "today", label: "Today" },
+							{ id: "last-3-days", label: "Last 3 Days" },
+							{ id: "last-week", label: "Last Week" },
+							{ id: "last-month", label: "Last Month" }
+						].map((filter) => (
+							<button
+								key={filter.id}
+								onClick={() => setDateFilter(filter.id as DateFilter)}
+								className={`whitespace-nowrap px-3 py-1.5 text-xs font-semibold rounded-full transition-colors border ${
+									dateFilter === filter.id
+										? "bg-blue-600 text-white border-blue-600 shadow-sm"
+										: "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+								}`}
+							>
+								{filter.label}
+							</button>
+						))}
+					</div>
+				)}
+			</header>
+
+			{/* Floating Alert Area for current location risk */}
+			{nearbyAlert && activeTab === "map" && (
+				<div className='absolute top-16 left-0 right-0 z-20 px-4 pt-2'>
+					<AlertBar change={nearbyAlert} onClose={() => setNearbyAlert(null)} />
+				</div>
+			)}
+
+			{/* Main Content Area */}
+			<main className='flex-1 relative flex flex-col min-h-0'>
+				{activeTab === "map" ? (
+					<div className='absolute inset-0'>
+						<MapboxMap
+							changes={filteredByDate.filter((c) => c.status === "approved")}
+							userLocation={userLocation}
+							onSelectChange={setActiveChange}
+							isSelectingLocation={isSelectingLocation}
+							onCancelSelection={() => setIsSelectingLocation(false)}
+							onConfirmLocation={(coords) => {
+								setSelectedReportCoords(coords)
+								setIsSelectingLocation(false)
+								setShowReportForm(true)
+							}}
+						/>
+					</div>
+				) : activeTab === "feed" ? (
+					<div className='h-full overflow-y-auto w-full max-w-2xl mx-auto'>
+						<Feed
+							changes={filteredByDate.filter((c) => c.status === "approved")}
+							onSelect={(change) => {
+								setActiveChange(change)
+								setActiveTab("map")
+							}}
+						/>
+					</div>
+				) : (
+					<AdminDashboard
+						pendingChanges={changesList.filter((c) => c.status === "pending")}
+						onApprove={handleApprove}
+						onReject={handleReject}
+					/>
+				)}
+
+				{/* Selected Change Detail Overlay */}
+				{activeChange && activeTab === "map" && (
+					<div className='absolute bottom-0 left-0 right-0 p-4 bg-white rounded-t-2xl shadow-[0_-5px_15px_rgba(0,0,0,0.1)] z-20 animate-slide-up transition-transform duration-300'>
+						<div className='w-12 h-1 bg-gray-300 rounded-full mx-auto mb-4' />
+
+						<div className='flex justify-between items-start mb-2'>
+							<h2 className='text-lg font-bold'>{activeChange.title}</h2>
+							<span
+								className={`px-2 py-1 text-xs font-semibold rounded ${
+									activeChange.severity === "red"
+										? "bg-red-100 text-red-700"
+										: activeChange.severity === "yellow"
+											? "bg-yellow-100 text-yellow-800"
+											: "bg-green-100 text-green-700"
+								}`}
+							>
+								{activeChange.date}
+							</span>
+						</div>
+
+						<p className='text-gray-600 text-sm mb-4'>{activeChange.description}</p>
+
+						<div className='flex gap-4 mb-4'>
+							<div className='flex-1 bg-gray-100 rounded-lg p-3 text-center'>
+								<p className='text-xs text-gray-500 uppercase font-bold tracking-wide mb-1'>
+									Before
+								</p>
+								<div className='h-20 bg-gray-300 rounded flex items-center justify-center text-sm text-gray-600'>
+									Two-way traffic
+								</div>
+							</div>
+							<div className='flex-1 bg-red-50 rounded-lg p-3 text-center border border-red-100'>
+								<p className='text-xs text-red-500 uppercase font-bold tracking-wide mb-1'>
+									Now
+								</p>
+								<div className='h-20 bg-white border border-red-200 rounded flex items-center justify-center text-sm font-semibold text-red-700'>
+									One-way only →
+								</div>
+							</div>
+						</div>
+
+						<button
+							className='w-full py-3 bg-black text-white rounded-xl font-medium focus:ring-4 focus:ring-gray-300 transition-shadow'
+							onClick={() => setActiveChange(null)}
+						>
+							Got it
+						</button>
+					</div>
+				)}
+
+				{/* Floating Action Button for Reporting */}
+				{!isSelectingLocation && (
+					<button
+						onClick={() => {
+							setActiveTab("map")
+							setIsSelectingLocation(true)
+						}}
+						className='absolute bottom-6 right-4 z-30 bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-full shadow-lg transition-transform hover:scale-105 flex items-center justify-center'
+					>
+						<Plus className='w-6 h-6' />
+					</button>
+				)}
+
+				{/* Success Toast */}
+				{showToast && (
+					<div className='absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white px-6 py-3 rounded-full shadow-xl text-sm font-medium animate-slide-up flex items-center space-x-2'>
+						<div className='w-2 h-2 bg-green-400 rounded-full animate-pulse' />
+						<span>{toastMessage}</span>
+					</div>
+				)}
+
+				{/* Modals */}
+				{showReportForm && selectedReportCoords && (
+					<ReportModal
+						selectedCoords={selectedReportCoords}
+						onClose={() => setShowReportForm(false)}
+						onSubmit={handleReportSubmit}
+						existingChanges={changesList}
+						onUpvote={handleUpvote}
+					/>
+				)}
+
+				{isReviewerRoute && !isAuthenticated && (
+					<LoginModal
+						onClose={() => {
+							// If they close without logging in, maybe redirect them to home
+							window.location.href = "/"
+						}}
+						onLogin={(role) => {
+							if (role === "admin") {
+								setIsAuthenticated(true)
+								setUserRole("admin")
+								setActiveTab("admin")
+							}
+						}}
+					/>
+				)}
+			</main>
+		</div>
+	)
+}
