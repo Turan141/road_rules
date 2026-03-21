@@ -41,7 +41,7 @@ export default function AdminDashboard({
 					<div className='flex justify-between items-start mb-3'>
 						<div>
 							<span className='px-2 py-1 text-xs font-bold uppercase tracking-wider text-blue-800 bg-blue-100 rounded-md'>
-								{change.type.replace("-", " ")}
+								{(change.type || 'other').replace("-", " ")}
 							</span>
 							<span className='text-xs text-gray-400 ml-2'>{change.date}</span>
 						</div>

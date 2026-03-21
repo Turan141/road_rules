@@ -37,7 +37,7 @@ export default function Feed({ changes, onSelect }: FeedProps) {
 												: "bg-green-50 text-green-600 ring-1 ring-green-100"
 									}`}
 								>
-									{change.type.replace("-", " ")}
+									{(change.type || 'other').replace("-", " ")}
 								</span>
 								<div className='flex items-center text-gray-400 text-xs font-medium'>
 									<Clock className='w-3.5 h-3.5 mr-1' />

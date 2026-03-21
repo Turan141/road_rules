@@ -16,7 +16,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 			try {
 				const rows = await sql`SELECT * FROM road_changes ORDER BY timestamp DESC`
 				const mapped = rows.map((r: any) => ({
-					...r,
+					...r, type: r.type || 'other', date: r.timestamp,
 					coordinates: [r.longitude, r.latitude]
 				}))
 				return res.status(200).json(mapped)

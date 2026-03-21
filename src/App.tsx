@@ -134,7 +134,7 @@ export default function App() {
 	const filteredByDate = changesList.filter((change) => {
 		if (dateFilter === "all") return true
 
-		const lowerDate = change.date.toLowerCase()
+		const lowerDate = (change.date || 'latest').toLowerCase()
 
 		if (dateFilter === "today") {
 			return lowerDate === "today" || lowerDate === "just now"
