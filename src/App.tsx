@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { RoadChange } from "./data/roadChanges";
+import { RoadChange, formatRoadChangeDate } from "./data/roadChanges"
 import MapboxMap from "./features/map/MapboxMap"
 import AlertBar from "./features/alerts/AlertBar"
 import Feed from "./features/feed/Feed"
@@ -38,6 +38,43 @@ export default function App() {
 	const [showReportForm, setShowReportForm] = useState(false)
 	const [showToast, setShowToast] = useState(false)
 	const [toastMessage, setToastMessage] = useState("")
+
+	const getDateAgeInDays = (date?: string) => {
+		if (!date) return null
+
+		const trimmedDate = date.trim()
+		const lowerDate = trimmedDate.toLowerCase()
+
+		if (["i̇ndi", "indi", "just now", "bu gün", "today"].includes(lowerDate)) {
+			return 0
+		}
+
+		if (["dünən", "yesterday"].includes(lowerDate)) {
+			return 1
+		}
+
+		const dayMatch = lowerDate.match(/(\d+)\s*(?:days?\s*ago|days?|gün(?:\s*əvvəl)?)/)
+		if (dayMatch) {
+			return Number(dayMatch[1])
+		}
+
+		const parsedDate = new Date(trimmedDate)
+		if (!Number.isNaN(parsedDate.getTime()) && /\d{4}-\d{2}-\d{2}|t\d{2}:\d{2}/i.test(trimmedDate)) {
+			const today = new Date()
+			const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+			const parsedStart = new Date(
+				parsedDate.getFullYear(),
+				parsedDate.getMonth(),
+				parsedDate.getDate()
+			)
+			return Math.max(
+				0,
+				Math.floor((todayStart.getTime() - parsedStart.getTime()) / (1000 * 60 * 60 * 24))
+			)
+		}
+
+		return null
+	}
 
 	// Fetch rules from backend
 	useEffect(() => {
@@ -116,7 +153,7 @@ export default function App() {
 		setChangesList((prev) =>
 			prev.map((c) => (c.id === id ? { ...c, upvotes: (c.upvotes || 1) + 1 } : c))
 		)
-		setToastMessage("Confirmed! Thanks for verifying.")
+		setToastMessage("Təsdiq etdiyiniz üçün təşəkkürlər.")
 		setShowToast(true)
 		setTimeout(() => setShowToast(false), 4000)
 	}
@@ -152,28 +189,23 @@ export default function App() {
 	const filteredByDate = changesList.filter((change) => {
 		if (dateFilter === "all") return true
 
-		const lowerDate = (change.date || "latest").toLowerCase()
+		const ageInDays = getDateAgeInDays(change.date)
+		if (ageInDays === null) return false
 
 		if (dateFilter === "today") {
-			return lowerDate === "today" || lowerDate === "just now"
+			return ageInDays === 0
 		}
 
 		if (dateFilter === "last-3-days") {
-			return (
-				lowerDate === "today" ||
-				lowerDate === "yesterday" ||
-				lowerDate === "just now" ||
-				lowerDate.includes("2 days") ||
-				lowerDate.includes("3 days")
-			)
+			return ageInDays <= 3
 		}
 
 		if (dateFilter === "last-week") {
-			return !lowerDate.includes("month") && !lowerDate.includes("year")
+			return ageInDays <= 7
 		}
 
 		if (dateFilter === "last-month") {
-			return !lowerDate.includes("year")
+			return ageInDays <= 30
 		}
 
 		return true
@@ -199,14 +231,14 @@ export default function App() {
 								className={`px-3 py-1 flex items-center space-x-1 rounded-md text-sm font-medium transition-colors ${activeTab === "map" ? "bg-white shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
 							>
 								<MapPin className='w-4 h-4' />
-								<span className='hidden sm:inline'>Map</span>
+								<span className='hidden sm:inline'>Xəritə</span>
 							</button>
 							<button
 								onClick={() => setActiveTab("feed")}
 								className={`px-3 py-1 flex items-center space-x-1 rounded-md text-sm font-medium transition-colors ${activeTab === "feed" ? "bg-white shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
 							>
 								<List className='w-4 h-4' />
-								<span className='hidden sm:inline'>Feed</span>
+								<span className='hidden sm:inline'>Lent</span>
 							</button>
 							{userRole === "admin" && (
 								<button
@@ -214,7 +246,7 @@ export default function App() {
 									className={`px-3 py-1 flex items-center space-x-1 rounded-md text-sm font-medium transition-colors ${activeTab === "admin" ? "bg-white shadow-sm text-blue-600" : "text-gray-500 hover:text-gray-700"}`}
 								>
 									<ShieldAlert className='w-4 h-4' />
-									<span className='hidden sm:inline'>Review</span>
+									<span className='hidden sm:inline'>Yoxlama</span>
 									{changesList.filter((c) => c.status === "pending").length > 0 && (
 										<span className='ml-1 w-2 h-2 bg-red-500 rounded-full animate-pulse' />
 									)}
@@ -244,11 +276,11 @@ export default function App() {
 					<div className='flex items-center space-x-2 overflow-x-auto pb-1 scrollbar-hide'>
 						<Filter className='w-4 h-4 text-gray-400 shrink-0 mr-1' />
 						{[
-							{ id: "all", label: "All Updates" },
-							{ id: "today", label: "Today" },
-							{ id: "last-3-days", label: "Last 3 Days" },
+							{ id: "all", label: "Bütün yeniliklər" },
+							{ id: "today", label: "Bu gün" },
+							{ id: "last-3-days", label: "Son 3 gün" },
 							{ id: "last-week", label: "Son 1 həftə" },
-							{ id: "last-month", label: "Last Month" }
+							{ id: "last-month", label: "Son 1 ay" }
 						].map((filter) => (
 							<button
 								key={filter.id}
@@ -324,7 +356,7 @@ export default function App() {
 											: "bg-green-100 text-green-700"
 								}`}
 							>
-								{activeChange.date}
+								{formatRoadChangeDate(activeChange.date)}
 							</span>
 						</div>
 
@@ -334,7 +366,7 @@ export default function App() {
 							className='w-full py-3 bg-black text-white rounded-xl font-medium focus:ring-4 focus:ring-gray-300 transition-shadow'
 							onClick={() => setActiveChange(null)}
 						>
-							Got it
+							Bağla
 						</button>
 					</div>
 				)}

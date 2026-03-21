@@ -101,7 +101,7 @@ export default function MapboxMap({
 							onClick={onCancelSelection}
 							className='px-6 py-3.5 bg-white text-gray-800 font-bold rounded-full shadow-lg hover:bg-gray-50 border border-gray-200 transition-colors'
 						>
-							Cancel
+							Ləğv et
 						</button>
 						<button
 							onClick={() => {
@@ -112,7 +112,7 @@ export default function MapboxMap({
 							className='px-8 py-3.5 bg-blue-600 text-white font-bold rounded-full shadow-[0_4px_14px_rgba(37,99,235,0.4)] hover:bg-blue-700 transition-colors flex items-center'
 						>
 							<Crosshair className='w-5 h-5 mr-2' />
-							Confirm Location
+							Məkanı təsdiqlə
 						</button>
 					</div>
 				</>

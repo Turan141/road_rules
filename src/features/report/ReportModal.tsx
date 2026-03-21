@@ -62,7 +62,12 @@ export default function ReportModal({
 					const data = await response.json()
 					const formattedAddress = formatAddress(data.address)
 
-					setAddress(formattedAddress || data.name || data.display_name?.split(",")[0] || "Naməlum küçə")
+					setAddress(
+						formattedAddress ||
+							data.name ||
+							data.display_name?.split(",")[0] ||
+							"Naməlum küçə"
+					)
 				} catch (error) {
 					console.error("Məkan alınarkən xəta:", error)
 					setAddress("Məkan alınmadı")

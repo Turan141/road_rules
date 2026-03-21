@@ -1,4 +1,4 @@
-import { RoadChange } from "../../data/roadChanges"
+import { RoadChange, formatRoadChangeDate, getRoadChangeTypeLabel } from "../../data/roadChanges"
 import { Check, X, MapPin } from "lucide-react"
 
 interface AdminDashboardProps {
@@ -17,7 +17,9 @@ export default function AdminDashboard({
 			<div className='flex flex-col items-center justify-center h-full p-8 text-center text-gray-500'>
 				<Check className='w-16 h-16 text-gray-300 mb-4' />
 				<h3 className='text-xl font-bold text-gray-700'>Hamısı hazırdır!</h3>
-				<p className='mt-2 text-sm'>Hazırda nəzərdən keçiriləcək gözləyən hesabat yoxdur.</p>
+				<p className='mt-2 text-sm'>
+					Hazırda nəzərdən keçiriləcək gözləyən hesabat yoxdur.
+				</p>
 			</div>
 		)
 	}
@@ -42,10 +44,12 @@ export default function AdminDashboard({
 						<div>
 							{change.type !== "other" && (
 								<span className='px-2 py-1 text-xs font-bold uppercase tracking-wider text-blue-800 bg-blue-100 rounded-md'>
-									{change.type.replace("-", " ")}
+									{getRoadChangeTypeLabel(change.type)}
 								</span>
 							)}
-							<span className='text-xs text-gray-400 ml-2'>{change.date}</span>
+							<span className='text-xs text-gray-400 ml-2'>
+								{formatRoadChangeDate(change.date)}
+							</span>
 						</div>
 					</div>
 
