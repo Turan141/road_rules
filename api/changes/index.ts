@@ -34,7 +34,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 			try {
 				await sql`
 					INSERT INTO road_changes (id, title, description, severity, status, longitude, latitude, timestamp, upvotes)
-					VALUES (${id}, ${title}, ${description}, ${severity}, ${status || "pending"}, ${coordinates[0]}, ${coordinates[1]}, ${timestamp}, ${upvotes || 0})
+					VALUES (${id}, ${title}, ${description}, ${severity}, ${status || "pending"}, ${coordinates[0]}, ${coordinates[1]}, ${timestamp || new Date().toISOString()}, ${upvotes || 0})
 				`
 				return res.status(201).json({ success: true, id })
 			} catch (error: any) {
