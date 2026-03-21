@@ -5,8 +5,11 @@ import Feed from "./features/feed/Feed"
 import ReportModal from "./features/report/ReportModal"
 import AdminDashboard from "./features/admin/AdminDashboard"
 import LoginModal from "./features/auth/LoginModal"
-import { MapPin, Navigation, List, Plus, ShieldAlert, LogOut, Filter } from "lucide-react"
+import { MapPin, List, Plus, ShieldAlert, LogOut, Filter } from "lucide-react"
 import { mockRoadChanges, RoadChange } from "./data/roadChanges"
+
+const API_URL =
+	import.meta.env.VITE_API_URL || (import.meta.env.PROD ? "" : "http://localhost:3001")
 
 export type DateFilter = "all" | "today" | "last-3-days" | "last-week" | "last-month"
 
@@ -37,6 +40,24 @@ export default function App() {
 	const [showToast, setShowToast] = useState(false)
 	const [toastMessage, setToastMessage] = useState("")
 
+	// Fetch rules from backend
+	useEffect(() => {
+		fetch(`${API_URL}/api/changes`)
+			.then((res) => res.json())
+			.then((data) => {
+				if (Array.isArray(data) && data.length > 0) {
+					// Merge backend data with mock data (or replace if you prefer)
+					// We'll replace mock objects if they exist, else append
+					setChangesList((prev) => {
+						const mockMap = new Map(prev.map((p) => [p.id, p]))
+						data.forEach((d) => mockMap.set(d.id, d))
+						return Array.from(mockMap.values())
+					})
+				}
+			})
+			.catch((err) => console.error("Failed to fetch backend changes:", err))
+	}, [])
+
 	// Real Geolocation
 	useEffect(() => {
 		if ("geolocation" in navigator) {
@@ -66,7 +87,17 @@ export default function App() {
 		return () => clearTimeout(timer)
 	}, [changesList])
 
-	const handleReportSubmit = (newChange: RoadChange) => {
+	const handleReportSubmit = async (newChange: RoadChange) => {
+		try {
+			await fetch(`${API_URL}/api/changes`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(newChange)
+			})
+		} catch (error) {
+			console.error("Failed to save to backend", error)
+		}
+
 		setChangesList([newChange, ...changesList])
 		setShowReportForm(false)
 		setToastMessage("Report submitted for admin review")
@@ -74,7 +105,15 @@ export default function App() {
 		setTimeout(() => setShowToast(false), 4000)
 	}
 
-	const handleUpvote = (id: string) => {
+	const handleUpvote = async (id: string) => {
+		try {
+			await fetch(`${API_URL}/api/changes/${id}/upvote`, {
+				method: "PATCH"
+			})
+		} catch (error) {
+			console.error("Failed to upvote on backend", error)
+		}
+
 		setChangesList((prev) =>
 			prev.map((c) => (c.id === id ? { ...c, upvotes: (c.upvotes || 1) + 1 } : c))
 		)

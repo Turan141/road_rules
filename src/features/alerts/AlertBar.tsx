@@ -1,4 +1,3 @@
-import React from "react"
 import { RoadChange } from "../../data/roadChanges"
 import { AlertCircle, X } from "lucide-react"
 

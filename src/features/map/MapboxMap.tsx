@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"
+import { useState, useEffect } from "react"
 import Map, { Marker, NavigationControl, GeolocateControl } from "react-map-gl/maplibre"
 import type { ViewState } from "react-map-gl/maplibre"
 import "maplibre-gl/dist/maplibre-gl.css"

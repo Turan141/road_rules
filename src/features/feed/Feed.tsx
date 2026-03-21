@@ -1,4 +1,3 @@
-import React from "react"
 import { RoadChange } from "../../data/roadChanges"
 import { Clock, MapPin } from "lucide-react"
 
