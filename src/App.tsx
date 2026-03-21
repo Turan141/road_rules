@@ -186,6 +186,20 @@ export default function App() {
 		}
 	}
 
+	const handleDelete = async (id: string) => {
+		try {
+			await fetch(`${API_URL}/api/changes/${id}/status`, {
+				method: "DELETE"
+			})
+			setChangesList((prev) => prev.filter((change) => change.id !== id))
+			setToastMessage("Hesabat silindi.")
+			setShowToast(true)
+			setTimeout(() => setShowToast(false), 4000)
+		} catch (error) {
+			console.error("Failed to delete", error)
+		}
+	}
+
 	const filteredByDate = changesList.filter((change) => {
 		if (dateFilter === "all") return true
 
@@ -337,6 +351,7 @@ export default function App() {
 						pendingChanges={changesList.filter((c) => c.status === "pending")}
 						onApprove={handleApprove}
 						onReject={handleReject}
+						onDelete={handleDelete}
 					/>
 				)}
 
@@ -361,6 +376,14 @@ export default function App() {
 						</div>
 
 						<p className='text-gray-600 text-sm mb-4'>{activeChange.description}</p>
+
+						{activeChange.image && (
+							<img
+								src={activeChange.image}
+								alt='Yüklənmiş sübut'
+								className='w-full h-56 object-cover rounded-xl border border-gray-100 mb-4'
+							/>
+						)}
 
 						<button
 							className='w-full py-3 bg-black text-white rounded-xl font-medium focus:ring-4 focus:ring-gray-300 transition-shadow'

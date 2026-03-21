@@ -35,17 +35,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 		}
 
 		if (req.method === "POST") {
-			const { id, title, description, severity, status, coordinates, timestamp, upvotes, image } = req.body
+			const { id, title, description, type, severity, status, coordinates, timestamp, upvotes, image } = req.body
 			try {
 				
 				try {
+					await sql`ALTER TABLE road_changes ADD COLUMN IF NOT EXISTS type TEXT;`
 					await sql`ALTER TABLE road_changes ADD COLUMN IF NOT EXISTS image TEXT;`
 				} catch(e) {
 					console.log("Could not alter table", e)
 				}
 				await sql`
-					INSERT INTO road_changes (id, title, description, severity, status, longitude, latitude, timestamp, upvotes, image)
-					VALUES (${id}, ${title}, ${description}, ${severity}, ${status || "pending"}, ${coordinates[0]}, ${coordinates[1]}, ${timestamp || new Date().toISOString()}, ${upvotes || 0}, ${image || null})
+					INSERT INTO road_changes (id, title, description, type, severity, status, longitude, latitude, timestamp, upvotes, image)
+					VALUES (${id}, ${title}, ${description}, ${type || "other"}, ${severity}, ${status || "pending"}, ${coordinates[0]}, ${coordinates[1]}, ${timestamp || new Date().toISOString()}, ${upvotes || 0}, ${image || null})
 				`
 				return res.status(201).json({ success: true, id })
 			} catch (error: any) {

@@ -56,9 +56,7 @@ export default function LoginModal({ onClose, onLogin }: LoginModalProps) {
 					</div>
 
 					<div>
-						<label className='block text-sm font-medium text-gray-700 mb-1'>
-							Şifrə
-						</label>
+						<label className='block text-sm font-medium text-gray-700 mb-1'>Şifrə</label>
 						<input
 							required
 							type='password'

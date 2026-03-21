@@ -5,12 +5,14 @@ interface AdminDashboardProps {
 	pendingChanges: RoadChange[]
 	onApprove: (id: string) => void
 	onReject: (id: string) => void
+	onDelete: (id: string) => void
 }
 
 export default function AdminDashboard({
 	pendingChanges,
 	onApprove,
-	onReject
+	onReject,
+	onDelete
 }: AdminDashboardProps) {
 	if (pendingChanges.length === 0) {
 		return (
@@ -55,15 +57,22 @@ export default function AdminDashboard({
 
 					<h3 className='font-semibold text-lg text-gray-900 mb-2'>{change.title}</h3>
 					<p className='text-gray-600 text-sm mb-4'>{change.description}</p>
+					{change.image && (
+						<img
+							src={change.image}
+							alt='Yüklənmiş sübut'
+							className='w-full h-56 object-cover rounded-xl border border-gray-200 mb-4'
+						/>
+					)}
 
 					<div className='flex justify-between items-center bg-gray-50 p-3 rounded-lg border border-gray-100 mb-4'>
 						<div className='flex items-center text-xs text-gray-600 font-medium'>
 							<MapPin className='w-4 h-4 mr-1 text-gray-400' />
 							{change.coordinates[1].toFixed(4)}, {change.coordinates[0].toFixed(4)}
 						</div>
-						<button className='text-xs text-blue-600 font-medium hover:underline'>
-							Sübuta bax
-						</button>
+						<span className='text-xs text-gray-500'>
+							{change.image ? 'Foto əlavə olunub' : 'Foto əlavə olunmayıb'}
+						</span>
 					</div>
 
 					<div className='flex space-x-3 pt-2 border-t border-gray-100'>
@@ -78,6 +87,12 @@ export default function AdminDashboard({
 							className='flex-1 flex items-center justify-center py-2.5 bg-red-50 text-red-700 hover:bg-red-100 font-semibold rounded-lg transition-colors border border-red-200'
 						>
 							<X className='w-4 h-4 mr-1.5' /> Rədd et
+						</button>
+						<button
+							onClick={() => onDelete(change.id)}
+							className='flex-1 flex items-center justify-center py-2.5 bg-gray-100 text-gray-700 hover:bg-gray-200 font-semibold rounded-lg transition-colors border border-gray-200'
+						>
+							Sil
 						</button>
 					</div>
 				</div>

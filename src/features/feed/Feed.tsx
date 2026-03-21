@@ -57,6 +57,14 @@ export default function Feed({ changes, onSelect }: FeedProps) {
 								{change.description}
 							</p>
 
+							{change.image && (
+								<img
+									src={change.image}
+									alt='Yüklənmiş sübut'
+									className='w-full h-48 object-cover rounded-xl border border-gray-100 mb-4'
+								/>
+							)}
+
 							<div className='flex items-center text-xs text-blue-600 font-medium group'>
 								<MapPin className='w-3.5 h-3.5 mr-1 group-hover:animate-bounce' />
 								<span>Xəritədə göstər</span>

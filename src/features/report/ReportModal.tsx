@@ -25,6 +25,29 @@ export default function ReportModal({
 	const [isSubmitting, setIsSubmitting] = useState(false)
 	const [submitError, setSubmitError] = useState<string | null>(null)
 
+	const getDistanceMeters = (
+		firstPoint: [number, number],
+		secondPoint: [number, number]
+	) => {
+		const [firstLongitude, firstLatitude] = firstPoint
+		const [secondLongitude, secondLatitude] = secondPoint
+		const earthRadius = 6371e3
+		const firstLatRadians = (firstLatitude * Math.PI) / 180
+		const secondLatRadians = (secondLatitude * Math.PI) / 180
+		const latitudeDelta = ((secondLatitude - firstLatitude) * Math.PI) / 180
+		const longitudeDelta = ((secondLongitude - firstLongitude) * Math.PI) / 180
+
+		const a =
+			Math.sin(latitudeDelta / 2) * Math.sin(latitudeDelta / 2) +
+			Math.cos(firstLatRadians) *
+				Math.cos(secondLatRadians) *
+				Math.sin(longitudeDelta / 2) *
+				Math.sin(longitudeDelta / 2)
+
+		const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+		return earthRadius * c
+	}
+
 	const formatAddress = (addressData?: Record<string, string>) => {
 		if (!addressData) return null
 
@@ -85,6 +108,15 @@ export default function ReportModal({
 	}, [selectedCoords])
 
 	if (!selectedCoords) return null
+
+	const duplicates = existingChanges
+		.filter((change) => change.status === "pending" || change.status === "approved")
+		.map((change) => ({
+			change,
+			distance: getDistanceMeters(selectedCoords, change.coordinates)
+		}))
+		.filter(({ distance }) => distance <= 150)
+		.sort((firstItem, secondItem) => firstItem.distance - secondItem.distance)
 
 	const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0]
@@ -151,9 +183,6 @@ export default function ReportModal({
 					)}
 
 					{(() => {
-						const duplicates = existingChanges.filter(
-							(c) => c.status === "pending" || c.status === "approved"
-						)
 						if (duplicates.length === 0) return null
 
 						return (
@@ -172,35 +201,35 @@ export default function ReportModal({
 								</div>
 
 								<div className='mt-3 space-y-2 pl-7'>
-									{duplicates.map((c) => (
+									{duplicates.map(({ change, distance }) => (
 										<div
-											key={c.id}
+											key={change.id}
 											className='bg-white p-3 rounded-lg border border-orange-100 shadow-sm flex flex-col justify-between'
 										>
 											<div className='flex justify-between'>
 												<span className='font-medium text-gray-800 text-sm'>
-													{c.title}
+													{change.title}
 												</span>
 												<span className='text-xs font-semibold px-2 py-1 bg-orange-100 text-orange-700 rounded-full'>
-													{c.status === "approved" ? "Təsdiqlənib" : "Gözləmədədir"}
+													{change.status === "approved" ? "Təsdiqlənib" : "Gözləmədədir"}
 												</span>
 											</div>
 											<div className='flex flex-col mt-2'>
 												<span className='text-sm text-gray-500 line-clamp-1'>
-													{c.description}
+													{change.description}
 												</span>
 												<div className='flex items-center justify-between mt-2'>
 													<div className='flex items-center text-xs text-orange-600 font-medium bg-orange-50 px-2 py-1 rounded whitespace-nowrap'>
 														<MapPin className='w-3 h-3 mr-1' />
-														Yaxınlıqda
+														{Math.round(distance)} m yaxınlıqda
 													</div>
-													{onUpvote && c.status === "pending" && (
+													{onUpvote && change.status === "pending" && (
 														<button
 															type='button'
-															onClick={() => onUpvote(c.id)}
+															onClick={() => onUpvote(change.id)}
 															className='text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-1.5 rounded-full font-medium transition-colors'
 														>
-															Mən də təsdiqləyirəm ({c.upvotes || 1})
+															Mən də təsdiqləyirəm ({change.upvotes || 1})
 														</button>
 													)}
 												</div>
@@ -280,7 +309,7 @@ export default function ReportModal({
 											<img
 												src={imageBase64}
 												className='h-full w-auto object-contain'
-												alt='Preview'
+												alt='Ön baxış'
 											/>
 										</div>
 									) : (

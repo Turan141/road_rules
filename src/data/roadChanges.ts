@@ -69,7 +69,10 @@ export function formatRoadChangeDate(date?: string) {
 	}
 
 	const parsedDate = new Date(trimmedDate)
-	if (!Number.isNaN(parsedDate.getTime()) && /\d{4}-\d{2}-\d{2}|t\d{2}:\d{2}/i.test(trimmedDate)) {
+	if (
+		!Number.isNaN(parsedDate.getTime()) &&
+		/\d{4}-\d{2}-\d{2}|t\d{2}:\d{2}/i.test(trimmedDate)
+	) {
 		return parsedDate.toLocaleDateString("az-Latn-AZ")
 	}
 

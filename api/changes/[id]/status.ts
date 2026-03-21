@@ -31,6 +31,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
     }
 
-    res.setHeader("Allow", ["PATCH"])
+    if (req.method === "DELETE") {
+        const { id } = req.query
+
+        try {
+            await sql`
+                DELETE FROM road_changes
+                WHERE id = ${id as string}
+            `
+            return res.status(200).json({ success: true, id })
+        } catch (error: any) {
+            console.error("DELETE Error:", error)
+            return res.status(500).json({ error: "Failed to delete rule", details: error.message })
+        }
+    }
+
+    res.setHeader("Allow", ["PATCH", "DELETE"])
     return res.status(405).end(`Method ${req.method} Not Allowed`)
 }
