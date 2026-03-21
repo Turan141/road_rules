@@ -7,10 +7,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 			console.error("DATABASE_URL is missing")
 			return res.status(500).json({ error: "Database not configured" })
 		}
-		
-		const sql = neon(process.env.DATABASE_URL);
 
-	if (req.method === 'OPTIONS') return res.status(200).end();
+		const sql = neon(process.env.DATABASE_URL)
+
+		if (req.method === "OPTIONS") return res.status(200).end()
 
 		if (req.method === "PATCH") {
 			const id = req.query.id as string
@@ -19,7 +19,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 				return res.status(200).json({ success: true })
 			} catch (error: any) {
 				console.error("PATCH Error:", error)
-				return res.status(500).json({ error: "Failed to upvote rule", details: error.message })
+				return res
+					.status(500)
+					.json({ error: "Failed to upvote rule", details: error.message })
 			}
 		}
 
@@ -27,6 +29,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 		return res.status(405).end(`Method ${req.method} Not Allowed`)
 	} catch (globalError: any) {
 		console.error("Global Handler Error:", globalError)
-		return res.status(500).json({ error: "Internal Server Function Error", details: globalError.message })
+		return res
+			.status(500)
+			.json({ error: "Internal Server Function Error", details: globalError.message })
 	}
 }
