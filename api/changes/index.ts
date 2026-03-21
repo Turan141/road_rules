@@ -8,7 +8,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 			return res.status(500).json({ error: "Database not configured" })
 		}
 		
-		const sql = neon(process.env.DATABASE_URL)
+		const sql = neon(process.env.DATABASE_URL);
+
+	if (req.method === 'OPTIONS') return res.status(200).end();
 
 		if (req.method === "GET") {
 			try {
