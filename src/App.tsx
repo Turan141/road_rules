@@ -434,7 +434,9 @@ export default function App() {
 							</div>
 
 							<div className='max-h-[44vh] overflow-y-auto px-4 py-4 sm:px-5'>
-								<p className='text-sm leading-6 text-slate-700'>{activeChange.description}</p>
+								<p className='text-sm leading-6 text-slate-700'>
+									{activeChange.description}
+								</p>
 
 								{activeChange.image && (
 									<div className='mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50'>
@@ -447,7 +449,8 @@ export default function App() {
 								)}
 
 								<p className='mt-4 text-xs text-slate-400'>
-									{activeChange.coordinates[1].toFixed(4)}, {activeChange.coordinates[0].toFixed(4)}
+									{activeChange.coordinates[1].toFixed(4)},{" "}
+									{activeChange.coordinates[0].toFixed(4)}
 								</p>
 
 								<button
@@ -488,7 +491,9 @@ export default function App() {
 						<div className='w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl sm:p-7'>
 							<div className='flex items-start justify-between gap-4'>
 								<div>
-									<p className='text-sm font-semibold text-blue-600'>YolInfo necə işləyir</p>
+									<p className='text-sm font-semibold text-blue-600'>
+										YolInfo necə işləyir
+									</p>
 									<h2 className='mt-1 text-2xl font-semibold text-slate-900'>
 										Sayta xoş gəldiniz
 									</h2>
@@ -502,24 +507,31 @@ export default function App() {
 							</div>
 
 							<p className='mt-3 text-sm leading-6 text-slate-600'>
-								Burada yollardakı dəyişiklikləri xəritədə görmək, yeni məlumat göndərmək və təsdiqlənmiş yenilikləri izləmək mümkündür.
+								Burada yollardakı dəyişiklikləri xəritədə görmək, yeni məlumat göndərmək
+								və təsdiqlənmiş yenilikləri izləmək mümkündür.
 							</p>
 
 							<div className='mt-5 space-y-3'>
 								<div className='rounded-2xl bg-slate-50 px-4 py-3'>
-									<p className='text-sm font-semibold text-slate-900'>1. Xəritəyə baxın</p>
+									<p className='text-sm font-semibold text-slate-900'>
+										1. Xəritəyə baxın
+									</p>
 									<p className='mt-1 text-sm text-slate-600'>
 										Təsdiqlənmiş dəyişiklikləri birbaşa xəritədə və ya lentdə izləyin.
 									</p>
 								</div>
 								<div className='rounded-2xl bg-slate-50 px-4 py-3'>
-									<p className='text-sm font-semibold text-slate-900'>2. Yeni hesabat göndərin</p>
+									<p className='text-sm font-semibold text-slate-900'>
+										2. Yeni hesabat göndərin
+									</p>
 									<p className='mt-1 text-sm text-slate-600'>
 										Sağ altdakı düymə ilə nöqtə seçin və qısa məlumat əlavə edin.
 									</p>
 								</div>
 								<div className='rounded-2xl bg-slate-50 px-4 py-3'>
-									<p className='text-sm font-semibold text-slate-900'>3. Təsdiqi gözləyin</p>
+									<p className='text-sm font-semibold text-slate-900'>
+										3. Təsdiqi gözləyin
+									</p>
 									<p className='mt-1 text-sm text-slate-600'>
 										Moderator yoxladıqdan sonra dəyişiklik hamı üçün görünəcək.
 									</p>
