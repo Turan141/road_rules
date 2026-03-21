@@ -8,8 +8,7 @@ import LoginModal from "./features/auth/LoginModal"
 import { MapPin, List, Plus, ShieldAlert, LogOut, Filter } from "lucide-react"
 import { mockRoadChanges, RoadChange } from "./data/roadChanges"
 
-const API_URL =
-	import.meta.env.VITE_API_URL || (import.meta.env.PROD ? "" : "http://localhost:3001")
+const API_URL = ""
 
 export type DateFilter = "all" | "today" | "last-3-days" | "last-week" | "last-month"
 
