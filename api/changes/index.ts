@@ -16,8 +16,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 			try {
 				const rows = await sql`SELECT * FROM road_changes ORDER BY timestamp DESC`
 				const mapped = rows.map((r: any) => ({
-					...r, type: r.type || 'other', date: r.timestamp,
-					coordinates: [r.longitude, r.latitude], image: r.image
+					...r,
+					type: r.type || "other",
+					date: r.timestamp,
+					coordinates: [r.longitude, r.latitude],
+					image: r.image
 				}))
 				return res.status(200).json(mapped)
 			} catch (error: any) {
@@ -35,13 +38,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 		}
 
 		if (req.method === "POST") {
-			const { id, title, description, type, severity, status, coordinates, timestamp, upvotes, image } = req.body
+			const {
+				id,
+				title,
+				description,
+				type,
+				severity,
+				status,
+				coordinates,
+				timestamp,
+				upvotes,
+				image
+			} = req.body
 			try {
-				
 				try {
 					await sql`ALTER TABLE road_changes ADD COLUMN IF NOT EXISTS type TEXT;`
 					await sql`ALTER TABLE road_changes ADD COLUMN IF NOT EXISTS image TEXT;`
-				} catch(e) {
+				} catch (e) {
 					console.log("Could not alter table", e)
 				}
 				await sql`

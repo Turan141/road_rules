@@ -14,7 +14,10 @@ export default function LoginModal({ onClose, onLogin }: LoginModalProps) {
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault()
 		// Hardcoded mock credentials
-		if (email === "admin@roadchange.com" && password === "admin") {
+		if (
+			(email === "admin@yolinfo.live" || email === "admin@roadchange.com") &&
+			password === "admin"
+		) {
 			onLogin("admin")
 		} else {
 			setError("Yanlış məlumat.")
@@ -48,7 +51,7 @@ export default function LoginModal({ onClose, onLogin }: LoginModalProps) {
 						<input
 							required
 							type='email'
-							placeholder='admin@roadchange.com'
+							placeholder='admin@yolinfo.live'
 							className='w-full bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-blue-500'
 							value={email}
 							onChange={(e) => setEmail(e.target.value)}

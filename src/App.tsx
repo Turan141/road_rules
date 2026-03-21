@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react"
-import { RoadChange, formatRoadChangeDate } from "./data/roadChanges"
+import { RoadChange, formatRoadChangeDate, getRoadChangeTypeLabel } from "./data/roadChanges"
 import MapboxMap from "./features/map/MapboxMap"
 import AlertBar from "./features/alerts/AlertBar"
 import Feed from "./features/feed/Feed"
 import ReportModal from "./features/report/ReportModal"
 import AdminDashboard from "./features/admin/AdminDashboard"
 import LoginModal from "./features/auth/LoginModal"
-import { MapPin, List, Plus, ShieldAlert, LogOut, Filter } from "lucide-react"
+import BrandMark from "./components/BrandMark"
+import { MapPin, List, Plus, ShieldAlert, LogOut, Filter, CalendarDays, X } from "lucide-react"
 
 const API_URL = ""
 
@@ -231,11 +232,11 @@ export default function App() {
 			<header className='px-4 py-3 bg-white shadow-sm flex flex-col z-10 relative space-y-3'>
 				<div className='flex items-center justify-between'>
 					<div className='flex items-center space-x-2'>
-						<div className='w-8 h-8 rounded-full bg-red-600 flex items-center justify-center text-white font-bold'>
-							R
+						<div className='shrink-0 rounded-2xl shadow-[0_8px_24px_rgba(15,23,42,0.14)]'>
+							<BrandMark className='w-9 h-9' />
 						</div>
 						<h1 className='text-xl flex items-center font-semibold tracking-tight'>
-							RoadChange
+							YolInfo
 						</h1>
 					</div>
 					<div className='flex items-center space-x-2 sm:space-x-4'>
@@ -357,40 +358,97 @@ export default function App() {
 
 				{/* Selected Change Detail Overlay */}
 				{activeChange && activeTab === "map" && (
-					<div className='absolute bottom-0 left-0 right-0 p-4 bg-white rounded-t-2xl shadow-[0_-5px_15px_rgba(0,0,0,0.1)] z-20 animate-slide-up transition-transform duration-300'>
-						<div className='w-12 h-1 bg-gray-300 rounded-full mx-auto mb-4' />
+					<div className='absolute inset-x-0 bottom-0 z-20 px-3 pb-3 sm:px-4 sm:pb-4 animate-slide-up'>
+						<div className='mx-auto max-w-2xl overflow-hidden rounded-[2rem] border border-white/70 bg-white/95 shadow-[0_-16px_60px_rgba(15,23,42,0.22)] backdrop-blur-xl'>
+							<div className='bg-gradient-to-r from-slate-950 via-blue-900 to-emerald-700 px-5 pb-5 pt-4 text-white sm:px-6'>
+								<div className='mb-4 flex items-center justify-between'>
+									<div className='mx-auto h-1.5 w-14 rounded-full bg-white/35' />
+									<button
+										onClick={() => setActiveChange(null)}
+										className='absolute right-7 top-6 inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/12 text-white transition-colors hover:bg-white/20'
+									>
+										<X className='h-4 w-4' />
+									</button>
+								</div>
 
-						<div className='flex justify-between items-start mb-2'>
-							<h2 className='text-lg font-bold'>{activeChange.title}</h2>
-							<span
-								className={`px-2 py-1 text-xs font-semibold rounded ${
-									activeChange.severity === "red"
-										? "bg-red-100 text-red-700"
-										: activeChange.severity === "yellow"
-											? "bg-yellow-100 text-yellow-800"
-											: "bg-green-100 text-green-700"
-								}`}
-							>
-								{formatRoadChangeDate(activeChange.date)}
-							</span>
+								<div className='flex flex-wrap items-center gap-2'>
+									{activeChange.type !== "other" && (
+										<span className='rounded-full border border-white/20 bg-white/12 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/95'>
+											{getRoadChangeTypeLabel(activeChange.type)}
+										</span>
+									)}
+									<span
+										className={`rounded-full px-3 py-1 text-[11px] font-semibold ${
+											activeChange.severity === "red"
+												? "bg-red-500/20 text-red-100 ring-1 ring-red-300/30"
+												: activeChange.severity === "yellow"
+													? "bg-amber-400/20 text-amber-50 ring-1 ring-amber-200/30"
+													: "bg-emerald-400/20 text-emerald-50 ring-1 ring-emerald-200/30"
+										}`}
+									>
+										{activeChange.severity === "red"
+											? "Yüksək prioritet"
+											: activeChange.severity === "yellow"
+												? "Orta prioritet"
+												: "Aşağı prioritet"}
+									</span>
+								</div>
+
+								<h2 className='mt-4 text-xl font-semibold leading-tight sm:text-2xl'>
+									{activeChange.title}
+								</h2>
+
+								<div className='mt-4 flex flex-wrap gap-2 text-sm text-white/85'>
+									<div className='inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5'>
+										<CalendarDays className='h-4 w-4' />
+										<span>{formatRoadChangeDate(activeChange.date)}</span>
+									</div>
+									{activeChange.roadName && (
+										<div className='inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5'>
+											<MapPin className='h-4 w-4' />
+											<span>{activeChange.roadName}</span>
+										</div>
+									)}
+								</div>
+							</div>
+
+							<div className='max-h-[48vh] overflow-y-auto px-5 pb-5 pt-5 sm:px-6 sm:pb-6'>
+								<div className='rounded-2xl border border-slate-200 bg-slate-50/90 p-4'>
+									<p className='text-sm leading-6 text-slate-700'>
+										{activeChange.description}
+									</p>
+								</div>
+
+								{activeChange.image && (
+									<div className='mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm'>
+										<div className='flex items-center justify-between border-b border-slate-100 px-4 py-3'>
+											<span className='text-sm font-semibold text-slate-800'>Foto sübut</span>
+											<span className='text-xs text-slate-500'>Yüklənmiş şəkil</span>
+										</div>
+										<img
+											src={activeChange.image}
+											alt='Yüklənmiş sübut'
+											className='h-64 w-full object-cover sm:h-72'
+										/>
+									</div>
+								)}
+
+								<div className='mt-4 flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 shadow-sm'>
+									<span className='inline-flex items-center gap-2'>
+										<MapPin className='h-4 w-4 text-blue-600' />
+										{activeChange.coordinates[1].toFixed(4)}, {activeChange.coordinates[0].toFixed(4)}
+									</span>
+									<span className='text-xs font-medium text-slate-400'>Xəritədə qeyd olunub</span>
+								</div>
+
+								<button
+									className='mt-5 w-full rounded-2xl bg-slate-950 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-slate-800 focus:ring-4 focus:ring-slate-300'
+									onClick={() => setActiveChange(null)}
+								>
+									Bağla
+								</button>
+							</div>
 						</div>
-
-						<p className='text-gray-600 text-sm mb-4'>{activeChange.description}</p>
-
-						{activeChange.image && (
-							<img
-								src={activeChange.image}
-								alt='Yüklənmiş sübut'
-								className='w-full h-56 object-cover rounded-xl border border-gray-100 mb-4'
-							/>
-						)}
-
-						<button
-							className='w-full py-3 bg-black text-white rounded-xl font-medium focus:ring-4 focus:ring-gray-300 transition-shadow'
-							onClick={() => setActiveChange(null)}
-						>
-							Bağla
-						</button>
 					</div>
 				)}
 

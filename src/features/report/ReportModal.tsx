@@ -48,28 +48,78 @@ export default function ReportModal({
 		return earthRadius * c
 	}
 
-	const formatAddress = (addressData?: Record<string, string>) => {
-		if (!addressData) return null
+	const getDisplayNameParts = (displayName?: string) =>
+		displayName
+			?.split(",")
+			.map((part) => part.trim())
+			.filter(Boolean) || []
 
-		const street = addressData.road || addressData.pedestrian || addressData.footway
-		const number = addressData.house_number
-		const area =
-			addressData.neighbourhood ||
-			addressData.suburb ||
-			addressData.city_district ||
-			addressData.quarter
+	const getFirstDefined = (...values: Array<string | null | undefined>) =>
+		values.find((value) => value && value.trim().length > 0) || null
+
+	const getDisplayNameFallback = (displayName?: string) => {
+		const usefulParts = getDisplayNameParts(displayName).filter(
+			(part) => !/^(azerbaijan|azərbaycan)$/i.test(part)
+		)
+
+		if (usefulParts.length === 0) return null
+		return usefulParts.slice(0, 3).join(", ")
+	}
+
+	const formatAddress = (
+		addressData?: Record<string, string>,
+		displayName?: string
+	) => {
+		if (!addressData) return getDisplayNameFallback(displayName)
+
+		const displayParts = getDisplayNameParts(displayName)
+		const inferredHouseNumber =
+			displayParts.find((part) => /^\d+[a-zA-Z\/-]*$/i.test(part)) || undefined
+		const street = getFirstDefined(
+			addressData.road,
+			addressData.residential,
+			addressData.pedestrian,
+			addressData.footway,
+			addressData.path,
+			addressData.service,
+			addressData.cycleway,
+			addressData.unclassified,
+			addressData.construction
+		)
+		const houseNumber = getFirstDefined(addressData.house_number, inferredHouseNumber)
+		const landmark = getFirstDefined(
+			addressData.amenity,
+			addressData.building,
+			addressData.shop,
+			addressData.office,
+			addressData.tourism,
+			addressData.leisure
+		)
+		const area = getFirstDefined(
+			addressData.neighbourhood,
+			addressData.suburb,
+			addressData.city_district,
+			addressData.quarter,
+			addressData.borough
+		)
+		const locality = getFirstDefined(
+			addressData.city,
+			addressData.town,
+			addressData.village,
+			addressData.municipality
+		)
 
 		if (street) {
-			const streetLine = number ? `${street} ${number}` : street
-			return area ? `${streetLine} (${area})` : streetLine
+			const streetLine = houseNumber ? `${street} ${houseNumber}` : street
+			const detail = [landmark, area, locality].find(
+				(part) => part && !streetLine.toLowerCase().includes(part.toLowerCase())
+			)
+
+			return detail ? `${streetLine}, ${detail}` : streetLine
 		}
 
 		return (
-			addressData.amenity ||
-			addressData.tourism ||
-			addressData.shop ||
-			addressData.office ||
-			null
+			getFirstDefined(landmark, area, locality) || getDisplayNameFallback(displayName)
 		)
 	}
 
@@ -83,12 +133,12 @@ export default function ReportModal({
 						`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&accept-language=az&zoom=18&addressdetails=1`
 					)
 					const data = await response.json()
-					const formattedAddress = formatAddress(data.address)
+					const formattedAddress = formatAddress(data.address, data.display_name)
 
 					setAddress(
 						formattedAddress ||
 							data.name ||
-							data.display_name?.split(",")[0] ||
+							getDisplayNameFallback(data.display_name) ||
 							"Naməlum küçə"
 					)
 				} catch (error) {
