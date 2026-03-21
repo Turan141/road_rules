@@ -66,10 +66,7 @@ export default function ReportModal({
 		return usefulParts.slice(0, 3).join(", ")
 	}
 
-	const formatAddress = (
-		addressData?: Record<string, string>,
-		displayName?: string
-	) => {
+	const formatAddress = (addressData?: Record<string, string>, displayName?: string) => {
 		if (!addressData) return getDisplayNameFallback(displayName)
 
 		const displayParts = getDisplayNameParts(displayName)

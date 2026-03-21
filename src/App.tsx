@@ -1,5 +1,9 @@
 import { useState, useEffect } from "react"
-import { RoadChange, formatRoadChangeDate, getRoadChangeTypeLabel } from "./data/roadChanges"
+import {
+	RoadChange,
+	formatRoadChangeDate,
+	getRoadChangeTypeLabel
+} from "./data/roadChanges"
 import MapboxMap from "./features/map/MapboxMap"
 import AlertBar from "./features/alerts/AlertBar"
 import Feed from "./features/feed/Feed"
@@ -7,7 +11,16 @@ import ReportModal from "./features/report/ReportModal"
 import AdminDashboard from "./features/admin/AdminDashboard"
 import LoginModal from "./features/auth/LoginModal"
 import BrandMark from "./components/BrandMark"
-import { MapPin, List, Plus, ShieldAlert, LogOut, Filter, CalendarDays, X } from "lucide-react"
+import {
+	MapPin,
+	List,
+	Plus,
+	ShieldAlert,
+	LogOut,
+	Filter,
+	CalendarDays,
+	X
+} from "lucide-react"
 
 const API_URL = ""
 
@@ -39,6 +52,7 @@ export default function App() {
 	const [showReportForm, setShowReportForm] = useState(false)
 	const [showToast, setShowToast] = useState(false)
 	const [toastMessage, setToastMessage] = useState("")
+	const [showWelcomeRoadmap, setShowWelcomeRoadmap] = useState(false)
 
 	const getDateAgeInDays = (date?: string) => {
 		if (!date) return null
@@ -60,7 +74,10 @@ export default function App() {
 		}
 
 		const parsedDate = new Date(trimmedDate)
-		if (!Number.isNaN(parsedDate.getTime()) && /\d{4}-\d{2}-\d{2}|t\d{2}:\d{2}/i.test(trimmedDate)) {
+		if (
+			!Number.isNaN(parsedDate.getTime()) &&
+			/\d{4}-\d{2}-\d{2}|t\d{2}:\d{2}/i.test(trimmedDate)
+		) {
 			const today = new Date()
 			const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate())
 			const parsedStart = new Date(
@@ -94,6 +111,22 @@ export default function App() {
 			})
 			.catch((err) => console.error("Failed to fetch backend changes:", err))
 	}, [])
+
+	useEffect(() => {
+		if (isReviewerRoute) return
+
+		try {
+			const hasSeenWelcomeRoadmap = window.localStorage.getItem(
+				"yolinfo-welcome-roadmap-seen"
+			)
+			if (!hasSeenWelcomeRoadmap) {
+				setShowWelcomeRoadmap(true)
+			}
+		} catch (error) {
+			console.warn("Failed to read welcome roadmap state:", error)
+			setShowWelcomeRoadmap(true)
+		}
+	}, [isReviewerRoute])
 
 	// Real Geolocation
 	useEffect(() => {
@@ -198,6 +231,15 @@ export default function App() {
 			setTimeout(() => setShowToast(false), 4000)
 		} catch (error) {
 			console.error("Failed to delete", error)
+		}
+	}
+
+	const dismissWelcomeRoadmap = () => {
+		setShowWelcomeRoadmap(false)
+		try {
+			window.localStorage.setItem("yolinfo-welcome-roadmap-seen", "true")
+		} catch (error) {
+			console.warn("Failed to persist welcome roadmap state:", error)
 		}
 	}
 
@@ -359,90 +401,57 @@ export default function App() {
 				{/* Selected Change Detail Overlay */}
 				{activeChange && activeTab === "map" && (
 					<div className='absolute inset-x-0 bottom-0 z-20 px-3 pb-3 sm:px-4 sm:pb-4 animate-slide-up'>
-						<div className='mx-auto max-w-2xl overflow-hidden rounded-[2rem] border border-white/70 bg-white/95 shadow-[0_-16px_60px_rgba(15,23,42,0.22)] backdrop-blur-xl'>
-							<div className='bg-gradient-to-r from-slate-950 via-blue-900 to-emerald-700 px-5 pb-5 pt-4 text-white sm:px-6'>
-								<div className='mb-4 flex items-center justify-between'>
-									<div className='mx-auto h-1.5 w-14 rounded-full bg-white/35' />
-									<button
-										onClick={() => setActiveChange(null)}
-										className='absolute right-7 top-6 inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/12 text-white transition-colors hover:bg-white/20'
-									>
-										<X className='h-4 w-4' />
-									</button>
-								</div>
-
-								<div className='flex flex-wrap items-center gap-2'>
-									{activeChange.type !== "other" && (
-										<span className='rounded-full border border-white/20 bg-white/12 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/95'>
-											{getRoadChangeTypeLabel(activeChange.type)}
+						<div className='mx-auto max-w-xl rounded-[1.5rem] border border-slate-200 bg-white shadow-[0_-10px_30px_rgba(15,23,42,0.12)]'>
+							<div className='flex items-start justify-between gap-4 border-b border-slate-100 px-4 py-4 sm:px-5'>
+								<div className='min-w-0'>
+									<div className='flex flex-wrap items-center gap-2 text-xs text-slate-500'>
+										{activeChange.type !== "other" && (
+											<span className='rounded-full bg-slate-100 px-2.5 py-1 font-medium text-slate-600'>
+												{getRoadChangeTypeLabel(activeChange.type)}
+											</span>
+										)}
+										<span className='inline-flex items-center gap-1'>
+											<CalendarDays className='h-3.5 w-3.5' />
+											{formatRoadChangeDate(activeChange.date)}
 										</span>
-									)}
-									<span
-										className={`rounded-full px-3 py-1 text-[11px] font-semibold ${
-											activeChange.severity === "red"
-												? "bg-red-500/20 text-red-100 ring-1 ring-red-300/30"
-												: activeChange.severity === "yellow"
-													? "bg-amber-400/20 text-amber-50 ring-1 ring-amber-200/30"
-													: "bg-emerald-400/20 text-emerald-50 ring-1 ring-emerald-200/30"
-										}`}
-									>
-										{activeChange.severity === "red"
-											? "Yüksək prioritet"
-											: activeChange.severity === "yellow"
-												? "Orta prioritet"
-												: "Aşağı prioritet"}
-									</span>
-								</div>
-
-								<h2 className='mt-4 text-xl font-semibold leading-tight sm:text-2xl'>
-									{activeChange.title}
-								</h2>
-
-								<div className='mt-4 flex flex-wrap gap-2 text-sm text-white/85'>
-									<div className='inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5'>
-										<CalendarDays className='h-4 w-4' />
-										<span>{formatRoadChangeDate(activeChange.date)}</span>
 									</div>
+									<h2 className='mt-2 text-lg font-semibold leading-6 text-slate-900 sm:text-xl'>
+										{activeChange.title}
+									</h2>
 									{activeChange.roadName && (
-										<div className='inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5'>
-											<MapPin className='h-4 w-4' />
-											<span>{activeChange.roadName}</span>
-										</div>
+										<p className='mt-2 flex items-center gap-2 text-sm text-slate-600'>
+											<MapPin className='h-4 w-4 shrink-0 text-slate-400' />
+											<span className='truncate'>{activeChange.roadName}</span>
+										</p>
 									)}
 								</div>
+								<button
+									onClick={() => setActiveChange(null)}
+									className='inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700'
+								>
+									<X className='h-4 w-4' />
+								</button>
 							</div>
 
-							<div className='max-h-[48vh] overflow-y-auto px-5 pb-5 pt-5 sm:px-6 sm:pb-6'>
-								<div className='rounded-2xl border border-slate-200 bg-slate-50/90 p-4'>
-									<p className='text-sm leading-6 text-slate-700'>
-										{activeChange.description}
-									</p>
-								</div>
+							<div className='max-h-[44vh] overflow-y-auto px-4 py-4 sm:px-5'>
+								<p className='text-sm leading-6 text-slate-700'>{activeChange.description}</p>
 
 								{activeChange.image && (
-									<div className='mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm'>
-										<div className='flex items-center justify-between border-b border-slate-100 px-4 py-3'>
-											<span className='text-sm font-semibold text-slate-800'>Foto sübut</span>
-											<span className='text-xs text-slate-500'>Yüklənmiş şəkil</span>
-										</div>
+									<div className='mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50'>
 										<img
 											src={activeChange.image}
 											alt='Yüklənmiş sübut'
-											className='h-64 w-full object-cover sm:h-72'
+											className='h-56 w-full object-cover sm:h-64'
 										/>
 									</div>
 								)}
 
-								<div className='mt-4 flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 shadow-sm'>
-									<span className='inline-flex items-center gap-2'>
-										<MapPin className='h-4 w-4 text-blue-600' />
-										{activeChange.coordinates[1].toFixed(4)}, {activeChange.coordinates[0].toFixed(4)}
-									</span>
-									<span className='text-xs font-medium text-slate-400'>Xəritədə qeyd olunub</span>
-								</div>
+								<p className='mt-4 text-xs text-slate-400'>
+									{activeChange.coordinates[1].toFixed(4)}, {activeChange.coordinates[0].toFixed(4)}
+								</p>
 
 								<button
-									className='mt-5 w-full rounded-2xl bg-slate-950 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-slate-800 focus:ring-4 focus:ring-slate-300'
+									className='mt-4 w-full rounded-xl bg-slate-900 py-3 text-sm font-semibold text-white transition-colors hover:bg-slate-800 focus:ring-4 focus:ring-slate-300'
 									onClick={() => setActiveChange(null)}
 								>
 									Bağla
@@ -474,6 +483,59 @@ export default function App() {
 				)}
 
 				{/* Modals */}
+				{showWelcomeRoadmap && (
+					<div className='absolute inset-0 z-40 flex items-center justify-center bg-slate-950/45 px-4 backdrop-blur-sm'>
+						<div className='w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl sm:p-7'>
+							<div className='flex items-start justify-between gap-4'>
+								<div>
+									<p className='text-sm font-semibold text-blue-600'>YolInfo necə işləyir</p>
+									<h2 className='mt-1 text-2xl font-semibold text-slate-900'>
+										Sayta xoş gəldiniz
+									</h2>
+								</div>
+								<button
+									onClick={dismissWelcomeRoadmap}
+									className='inline-flex h-9 w-9 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700'
+								>
+									<X className='h-4 w-4' />
+								</button>
+							</div>
+
+							<p className='mt-3 text-sm leading-6 text-slate-600'>
+								Burada yollardakı dəyişiklikləri xəritədə görmək, yeni məlumat göndərmək və təsdiqlənmiş yenilikləri izləmək mümkündür.
+							</p>
+
+							<div className='mt-5 space-y-3'>
+								<div className='rounded-2xl bg-slate-50 px-4 py-3'>
+									<p className='text-sm font-semibold text-slate-900'>1. Xəritəyə baxın</p>
+									<p className='mt-1 text-sm text-slate-600'>
+										Təsdiqlənmiş dəyişiklikləri birbaşa xəritədə və ya lentdə izləyin.
+									</p>
+								</div>
+								<div className='rounded-2xl bg-slate-50 px-4 py-3'>
+									<p className='text-sm font-semibold text-slate-900'>2. Yeni hesabat göndərin</p>
+									<p className='mt-1 text-sm text-slate-600'>
+										Sağ altdakı düymə ilə nöqtə seçin və qısa məlumat əlavə edin.
+									</p>
+								</div>
+								<div className='rounded-2xl bg-slate-50 px-4 py-3'>
+									<p className='text-sm font-semibold text-slate-900'>3. Təsdiqi gözləyin</p>
+									<p className='mt-1 text-sm text-slate-600'>
+										Moderator yoxladıqdan sonra dəyişiklik hamı üçün görünəcək.
+									</p>
+								</div>
+							</div>
+
+							<button
+								onClick={dismissWelcomeRoadmap}
+								className='mt-6 w-full rounded-2xl bg-blue-600 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-700 focus:ring-4 focus:ring-blue-200'
+							>
+								Başla
+							</button>
+						</div>
+					</div>
+				)}
+
 				{showReportForm && selectedReportCoords && (
 					<ReportModal
 						selectedCoords={selectedReportCoords}
