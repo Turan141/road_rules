@@ -392,6 +392,7 @@ export default function App() {
 				) : (
 					<AdminDashboard
 						pendingChanges={changesList.filter((c) => c.status === "pending")}
+						reviewedChanges={changesList.filter((c) => c.status === "approved")}
 						onApprove={handleApprove}
 						onReject={handleReject}
 						onDelete={handleDelete}
