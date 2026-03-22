@@ -45,7 +45,8 @@ function getOrCreateStorageValue(key: string) {
 	}
 
 	try {
-		const existingValue = window.sessionStorage.getItem(key) || window.localStorage.getItem(key)
+		const existingValue =
+			window.sessionStorage.getItem(key) || window.localStorage.getItem(key)
 		if (existingValue) {
 			return existingValue
 		}
@@ -103,7 +104,9 @@ export default function App() {
 	const [showToast, setShowToast] = useState(false)
 	const [toastMessage, setToastMessage] = useState("")
 	const [showWelcomeRoadmap, setShowWelcomeRoadmap] = useState(false)
-	const [analyticsSummary, setAnalyticsSummary] = useState<SiteAnalyticsSummary | null>(null)
+	const [analyticsSummary, setAnalyticsSummary] = useState<SiteAnalyticsSummary | null>(
+		null
+	)
 	const [isAnalyticsLoading, setIsAnalyticsLoading] = useState(false)
 
 	const getDateAgeInDays = (date?: string) => {
