@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node"
 import { neon } from "@neondatabase/serverless"
-import { validateCreateRoadChange } from "../_lib/roadChangeValidation"
+import { validateCreateRoadChange } from "../_lib/roadChangeValidation.js"
+import { enforceRateLimit } from "../_lib/rateLimit.js"
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
 	try {
@@ -41,6 +42,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 		}
 
 		if (req.method === "POST") {
+			const isAllowed = await enforceRateLimit(sql, req, res, {
+				scope: "create-change",
+				maxRequests: 4,
+				windowMinutes: 30,
+				errorMessage: "Çox tez-tez hesabat göndərirsiniz. Bir az sonra yenidən cəhd edin."
+			})
+			if (!isAllowed) {
+				return
+			}
+
 			const validation = validateCreateRoadChange(req.body)
 			if (!validation.ok) {
 				return res.status(400).json({ error: validation.error })

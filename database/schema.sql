@@ -17,3 +17,15 @@ CREATE INDEX IF NOT EXISTS road_changes_timestamp_idx
 
 CREATE INDEX IF NOT EXISTS road_changes_status_idx
     ON road_changes (status);
+
+CREATE TABLE IF NOT EXISTS request_rate_limits (
+    scope TEXT NOT NULL,
+    identifier_hash TEXT NOT NULL,
+    bucket_start TIMESTAMPTZ NOT NULL,
+    hits INTEGER NOT NULL DEFAULT 0,
+    expires_at TIMESTAMPTZ NOT NULL,
+    PRIMARY KEY (scope, identifier_hash, bucket_start)
+);
+
+CREATE INDEX IF NOT EXISTS request_rate_limits_expires_at_idx
+    ON request_rate_limits (expires_at);

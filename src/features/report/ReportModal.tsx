@@ -11,12 +11,67 @@ interface ReportModalProps {
 }
 
 const MAX_IMAGE_SIZE_BYTES = 3 * 1024 * 1024
-const ALLOWED_IMAGE_TYPES = new Set([
-	"image/png",
-	"image/jpeg",
-	"image/webp",
-	"image/gif"
-])
+const MAX_OUTPUT_IMAGE_BYTES = 550 * 1024
+const MAX_IMAGE_DIMENSION = 1400
+const ALLOWED_IMAGE_TYPES = new Set(["image/png", "image/jpeg", "image/webp"])
+
+async function loadImageElement(file: File) {
+	const objectUrl = URL.createObjectURL(file)
+
+	try {
+		const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+			const nextImage = new Image()
+			nextImage.onload = () => resolve(nextImage)
+			nextImage.onerror = () => reject(new Error("Image could not be loaded"))
+			nextImage.src = objectUrl
+		})
+
+		return image
+	} finally {
+		URL.revokeObjectURL(objectUrl)
+	}
+}
+
+function scaleDimensions(width: number, height: number) {
+	const largestSide = Math.max(width, height)
+	if (largestSide <= MAX_IMAGE_DIMENSION) {
+		return { width, height }
+	}
+
+	const scale = MAX_IMAGE_DIMENSION / largestSide
+	return {
+		width: Math.max(1, Math.round(width * scale)),
+		height: Math.max(1, Math.round(height * scale))
+	}
+}
+
+async function compressImageToDataUrl(file: File) {
+	const image = await loadImageElement(file)
+	const dimensions = scaleDimensions(image.naturalWidth, image.naturalHeight)
+	const canvas = document.createElement("canvas")
+	canvas.width = dimensions.width
+	canvas.height = dimensions.height
+
+	const context = canvas.getContext("2d")
+	if (!context) {
+		throw new Error("Canvas is not available")
+	}
+
+	context.drawImage(image, 0, 0, dimensions.width, dimensions.height)
+
+	const qualitySteps = [0.82, 0.72, 0.62, 0.52, 0.45]
+	let bestResult = canvas.toDataURL("image/webp", qualitySteps[0])
+
+	for (const quality of qualitySteps) {
+		const candidate = canvas.toDataURL("image/webp", quality)
+		bestResult = candidate
+		if (candidate.length <= MAX_OUTPUT_IMAGE_BYTES * 1.37) {
+			break
+		}
+	}
+
+	return bestResult
+}
 
 export default function ReportModal({
 	selectedCoords,
@@ -177,7 +232,7 @@ export default function ReportModal({
 		const file = e.target.files?.[0]
 		if (file) {
 			if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
-				setSubmitError("Yalnız PNG, JPG, WEBP və GIF faylları qəbul olunur.")
+				setSubmitError("Yalnız PNG, JPG və WEBP faylları qəbul olunur.")
 				e.target.value = ""
 				return
 			}
@@ -189,11 +244,19 @@ export default function ReportModal({
 			}
 
 			setSubmitError(null)
-			const reader = new FileReader()
-			reader.onloadend = () => {
-				setImageBase64(reader.result as string)
-			}
-			reader.readAsDataURL(file)
+			void (async () => {
+				try {
+					const compressedImage = await compressImageToDataUrl(file)
+					setImageBase64(compressedImage)
+				} catch (error) {
+					console.error("Şəkil sıxılarkən xəta baş verdi:", error)
+					setImageBase64(null)
+					setSubmitError(
+						"Şəkili emal etmək mümkün olmadı. Zəhmət olmasa başqa fayl seçin."
+					)
+					e.target.value = ""
+				}
+			})()
 		}
 	}
 
@@ -404,7 +467,7 @@ export default function ReportModal({
 												Foto sübutu yüklə
 											</p>
 											<p className='text-xs text-gray-400 mt-1'>
-												Təsdiqlənmə sürətini artırır, maksimum 3 MB
+												Göndərilmədən əvvəl sıxılır, maksimum 3 MB
 											</p>
 										</>
 									)}

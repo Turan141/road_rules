@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node"
 import { neon } from "@neondatabase/serverless"
-import { validateRoadChangeId } from "../../_lib/roadChangeValidation"
+import { validateRoadChangeId } from "../../_lib/roadChangeValidation.js"
+import { enforceRateLimit } from "../../_lib/rateLimit.js"
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
 	try {
@@ -20,6 +21,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 			}
 
 			const id = idResult.data
+			const isBurstAllowed = await enforceRateLimit(sql, req, res, {
+				scope: "upvote-burst",
+				maxRequests: 20,
+				windowMinutes: 10,
+				errorMessage: "Çox tez-tez təsdiq göndərirsiniz. Bir az sonra yenidən cəhd edin."
+			})
+			if (!isBurstAllowed) {
+				return
+			}
+
+			const isDuplicateAllowed = await enforceRateLimit(sql, req, res, {
+				scope: "upvote-per-change",
+				maxRequests: 1,
+				windowMinutes: 60 * 24,
+				resourceKey: id,
+				errorMessage:
+					"Bu hesabat üçün artıq təsdiq göndərmisiniz. Daha sonra yenidən cəhd edin."
+			})
+			if (!isDuplicateAllowed) {
+				return
+			}
+
 			try {
 				const rows = await sql`
 					UPDATE road_changes

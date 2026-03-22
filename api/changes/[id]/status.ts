@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node"
 import { neon } from "@neondatabase/serverless"
-import { requireAdminSession } from "../../_lib/auth"
-import { validateRoadChangeId } from "../../_lib/roadChangeValidation"
+import { requireAdminSession } from "../../_lib/auth.js"
+import { validateRoadChangeId } from "../../_lib/roadChangeValidation.js"
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
 	if (!process.env.DATABASE_URL) {

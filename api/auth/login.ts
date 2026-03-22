@@ -3,7 +3,7 @@ import {
 	authenticateAdmin,
 	createAdminSessionCookie,
 	isAuthConfigured
-} from "../_lib/auth"
+} from "../_lib/auth.js"
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
 	res.setHeader("Cache-Control", "no-store")
