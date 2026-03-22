@@ -5,10 +5,18 @@ import { RoadChange } from "../../data/roadChanges"
 interface ReportModalProps {
 	selectedCoords: [number, number] | null
 	onClose: () => void
-	onSubmit: (newChange: RoadChange) => void
+	onSubmit: (newChange: RoadChange) => Promise<void>
 	existingChanges?: RoadChange[]
-	onUpvote?: (id: string) => void
+	onUpvote?: (id: string) => Promise<void>
 }
+
+const MAX_IMAGE_SIZE_BYTES = 3 * 1024 * 1024
+const ALLOWED_IMAGE_TYPES = new Set([
+	"image/png",
+	"image/jpeg",
+	"image/webp",
+	"image/gif"
+])
 
 export default function ReportModal({
 	selectedCoords,
@@ -168,6 +176,19 @@ export default function ReportModal({
 	const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0]
 		if (file) {
+			if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
+				setSubmitError("Yalnız PNG, JPG, WEBP və GIF faylları qəbul olunur.")
+				e.target.value = ""
+				return
+			}
+
+			if (file.size > MAX_IMAGE_SIZE_BYTES) {
+				setSubmitError("Şəkil ölçüsü 3 MB-dan böyük olmamalıdır.")
+				e.target.value = ""
+				return
+			}
+
+			setSubmitError(null)
 			const reader = new FileReader()
 			reader.onloadend = () => {
 				setImageBase64(reader.result as string)
@@ -176,17 +197,17 @@ export default function ReportModal({
 		}
 	}
 
-	const handleSubmit = async (e: React.FormEvent) => {
-		e.preventDefault()
+	const handleSubmit = async (e?: React.FormEvent | React.MouseEvent) => {
+		e?.preventDefault()
 		if (!selectedCoords) return
 
 		setIsSubmitting(true)
 		setSubmitError(null)
 
 		const newChange: RoadChange = {
-			id: Math.random().toString(36).substring(7),
-			title,
-			description,
+			id: globalThis.crypto?.randomUUID?.().replace(/-/g, "") ?? `${Date.now()}report`,
+			title: title.trim(),
+			description: description.trim(),
 			type: "other",
 			roadName: address || "Seçilmiş Koordinatlar",
 			coordinates: selectedCoords,
@@ -205,6 +226,19 @@ export default function ReportModal({
 			setSubmitError("Hesabatı göndərmək mümkün olmadı. Zəhmət olmasa yenidən cəhd edin.")
 		} finally {
 			setIsSubmitting(false)
+		}
+	}
+
+	const handleDuplicateUpvote = async (id: string) => {
+		if (!onUpvote) {
+			return
+		}
+
+		try {
+			await onUpvote(id)
+		} catch (error) {
+			console.error("Failed to confirm duplicate report", error)
+			setSubmitError("Təsdiq göndərilə bilmədi. Zəhmət olmasa yenidən cəhd edin.")
 		}
 	}
 
@@ -273,7 +307,9 @@ export default function ReportModal({
 													{onUpvote && change.status === "pending" && (
 														<button
 															type='button'
-															onClick={() => onUpvote(change.id)}
+															onClick={() => {
+																void handleDuplicateUpvote(change.id)
+															}}
 															className='text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-1.5 rounded-full font-medium transition-colors'
 														>
 															Mən də təsdiqləyirəm ({change.upvotes || 1})
@@ -320,6 +356,7 @@ export default function ReportModal({
 								required
 								value={title}
 								onChange={(e) => setTitle(e.target.value)}
+								maxLength={120}
 								className='w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors'
 								placeholder='Məsələn: Təbriz küçəsi tək yönlü oldu'
 							/>
@@ -333,6 +370,7 @@ export default function ReportModal({
 								required
 								value={description}
 								onChange={(e) => setDescription(e.target.value)}
+								maxLength={1000}
 								className='w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors'
 								rows={3}
 								placeholder='Vəziyyəti ətraflı təsvir edin...'
@@ -366,7 +404,7 @@ export default function ReportModal({
 												Foto sübutu yüklə
 											</p>
 											<p className='text-xs text-gray-400 mt-1'>
-												Təsdiqlənmə sürətini artırır
+												Təsdiqlənmə sürətini artırır, maksimum 3 MB
 											</p>
 										</>
 									)}

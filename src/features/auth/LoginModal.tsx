@@ -1,27 +1,28 @@
 import React, { useState } from "react"
-import { X, Lock } from "lucide-react"
+import { Loader2, Lock, X } from "lucide-react"
 
 interface LoginModalProps {
 	onClose: () => void
-	onLogin: (role: "admin" | "user") => void
+	onLogin: (email: string, password: string) => Promise<string | null>
 }
 
 export default function LoginModal({ onClose, onLogin }: LoginModalProps) {
 	const [email, setEmail] = useState("")
 	const [password, setPassword] = useState("")
 	const [error, setError] = useState("")
+	const [isSubmitting, setIsSubmitting] = useState(false)
 
-	const handleSubmit = (e: React.FormEvent) => {
+	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault()
-		// Hardcoded mock credentials
-		if (
-			(email === "admin@yolinfo.live" || email === "admin@roadchange.com") &&
-			password === "admin"
-		) {
-			onLogin("admin")
-		} else {
-			setError("Yanlış məlumat.")
+		setIsSubmitting(true)
+		setError("")
+
+		const nextError = await onLogin(email.trim(), password)
+		if (nextError) {
+			setError(nextError)
 		}
+
+		setIsSubmitting(false)
 	}
 
 	return (
@@ -51,10 +52,12 @@ export default function LoginModal({ onClose, onLogin }: LoginModalProps) {
 						<input
 							required
 							type='email'
-							placeholder='admin@yolinfo.live'
+							autoComplete='email'
+							placeholder='reviewer@company.com'
 							className='w-full bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-blue-500'
 							value={email}
 							onChange={(e) => setEmail(e.target.value)}
+							disabled={isSubmitting}
 						/>
 					</div>
 
@@ -63,18 +66,27 @@ export default function LoginModal({ onClose, onLogin }: LoginModalProps) {
 						<input
 							required
 							type='password'
+							autoComplete='current-password'
 							placeholder='••••••••'
 							className='w-full bg-gray-50 border border-gray-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-blue-500'
 							value={password}
 							onChange={(e) => setPassword(e.target.value)}
+							disabled={isSubmitting}
 						/>
 					</div>
 
 					<button
 						type='submit'
+						disabled={isSubmitting}
 						className='w-full mt-2 py-3 bg-black text-white rounded-xl font-bold focus:ring-4 focus:ring-gray-300 transition-shadow'
 					>
-						Daxil ol
+						{isSubmitting ? (
+							<span className='inline-flex items-center justify-center'>
+								<Loader2 className='mr-2 h-4 w-4 animate-spin' /> Yoxlanılır...
+							</span>
+						) : (
+							"Daxil ol"
+						)}
 					</button>
 				</form>
 			</div>

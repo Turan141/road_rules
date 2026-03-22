@@ -19,18 +19,33 @@ import {
 	LogOut,
 	Filter,
 	CalendarDays,
-	X
+	X,
+	Loader2
 } from "lucide-react"
 
-const API_URL = ""
+const API_URL = import.meta.env.VITE_API_URL?.replace(/\/$/, "") ?? ""
 
 export type DateFilter = "all" | "today" | "last-3-days" | "last-week" | "last-month"
+
+async function parseErrorMessage(response: Response, fallbackMessage: string) {
+	try {
+		const data = await response.json()
+		if (typeof data?.error === "string" && data.error.trim()) {
+			return data.error
+		}
+	} catch {
+		// Ignore JSON parsing failures and use the fallback message below.
+	}
+
+	return fallbackMessage
+}
 
 export default function App() {
 	// Simple routing for demo purposes without react-router
 	const isReviewerRoute = window.location.pathname === "/reviewer"
 
 	const [isAuthenticated, setIsAuthenticated] = useState(false)
+	const [isAuthLoading, setIsAuthLoading] = useState(isReviewerRoute)
 
 	const [activeTab, setActiveTab] = useState<"map" | "feed" | "admin">("map")
 	const [userRole, setUserRole] = useState<"user" | "admin">("user")
@@ -97,9 +112,15 @@ export default function App() {
 	// Fetch rules from backend
 	useEffect(() => {
 		fetch(`${API_URL}/api/changes`)
-			.then((res) => res.json())
+			.then(async (res) => {
+				if (!res.ok) {
+					throw new Error(await parseErrorMessage(res, "Failed to fetch changes"))
+				}
+
+				return res.json()
+			})
 			.then((data) => {
-				if (Array.isArray(data) && data.length > 0) {
+				if (Array.isArray(data)) {
 					// Merge backend data with mock data (or replace if you prefer)
 					// We'll replace mock objects if they exist, else append
 					setChangesList((prev) => {
@@ -111,6 +132,50 @@ export default function App() {
 			})
 			.catch((err) => console.error("Failed to fetch backend changes:", err))
 	}, [])
+
+	useEffect(() => {
+		if (!isReviewerRoute) {
+			setIsAuthLoading(false)
+			return
+		}
+
+		let isDisposed = false
+
+		const restoreAdminSession = async () => {
+			setIsAuthLoading(true)
+			try {
+				const response = await fetch(`${API_URL}/api/auth/session`, {
+					credentials: "include"
+				})
+				if (!response.ok) {
+					throw new Error(await parseErrorMessage(response, "Session check failed"))
+				}
+
+				const session = await response.json()
+				if (isDisposed) {
+					return
+				}
+
+				if (session.authenticated) {
+					setIsAuthenticated(true)
+					setUserRole("admin")
+					setActiveTab("admin")
+				}
+			} catch (error) {
+				console.error("Failed to restore admin session", error)
+			} finally {
+				if (!isDisposed) {
+					setIsAuthLoading(false)
+				}
+			}
+		}
+
+		void restoreAdminSession()
+
+		return () => {
+			isDisposed = true
+		}
+	}, [isReviewerRoute])
 
 	useEffect(() => {
 		if (isReviewerRoute) return
@@ -158,17 +223,17 @@ export default function App() {
 	}, [changesList])
 
 	const handleReportSubmit = async (newChange: RoadChange) => {
-		try {
-			await fetch(`${API_URL}/api/changes`, {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(newChange)
-			})
-		} catch (error) {
-			console.error("Failed to save to backend", error)
+		const response = await fetch(`${API_URL}/api/changes`, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify(newChange)
+		})
+
+		if (!response.ok) {
+			throw new Error(await parseErrorMessage(response, "Failed to save report"))
 		}
 
-		setChangesList([newChange, ...changesList])
+		setChangesList((prev) => [newChange, ...prev])
 		setShowReportForm(false)
 		setToastMessage("Hesabat admin yoxlanışı üçün göndərildi")
 		setShowToast(true)
@@ -176,12 +241,12 @@ export default function App() {
 	}
 
 	const handleUpvote = async (id: string) => {
-		try {
-			await fetch(`${API_URL}/api/changes/${id}/upvote`, {
-				method: "PATCH"
-			})
-		} catch (error) {
-			console.error("Failed to upvote on backend", error)
+		const response = await fetch(`${API_URL}/api/changes/${id}/upvote`, {
+			method: "PATCH"
+		})
+
+		if (!response.ok) {
+			throw new Error(await parseErrorMessage(response, "Failed to confirm report"))
 		}
 
 		setChangesList((prev) =>
@@ -193,45 +258,95 @@ export default function App() {
 	}
 
 	const handleApprove = async (id: string) => {
-		try {
-			await fetch(`${API_URL}/api/changes/${id}/status`, {
-				method: "PATCH",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ status: "approved" })
-			})
-			setChangesList((prev) =>
-				prev.map((c) => (c.id === id ? { ...c, status: "approved" } : c))
-			)
-		} catch (e) {
-			console.error("Failed to approve", e)
+		const response = await fetch(`${API_URL}/api/changes/${id}/status`, {
+			method: "PATCH",
+			headers: { "Content-Type": "application/json" },
+			credentials: "include",
+			body: JSON.stringify({ status: "approved" })
+		})
+
+		if (!response.ok) {
+			throw new Error(await parseErrorMessage(response, "Failed to approve report"))
 		}
+
+		setChangesList((prev) =>
+			prev.map((c) => (c.id === id ? { ...c, status: "approved" } : c))
+		)
+		setToastMessage("Hesabat təsdiqləndi.")
+		setShowToast(true)
+		setTimeout(() => setShowToast(false), 4000)
 	}
 
 	const handleReject = async (id: string) => {
-		try {
-			await fetch(`${API_URL}/api/changes/${id}/status`, {
-				method: "PATCH",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ status: "rejected" })
-			})
-			setChangesList((prev) => prev.filter((c) => c.id !== id))
-		} catch (e) {
-			console.error("Failed to reject", e)
+		const response = await fetch(`${API_URL}/api/changes/${id}/status`, {
+			method: "PATCH",
+			headers: { "Content-Type": "application/json" },
+			credentials: "include",
+			body: JSON.stringify({ status: "rejected" })
+		})
+
+		if (!response.ok) {
+			throw new Error(await parseErrorMessage(response, "Failed to reject report"))
 		}
+
+		setChangesList((prev) => prev.filter((c) => c.id !== id))
+		setToastMessage("Hesabat rədd edildi.")
+		setShowToast(true)
+		setTimeout(() => setShowToast(false), 4000)
 	}
 
 	const handleDelete = async (id: string) => {
-		try {
-			await fetch(`${API_URL}/api/changes/${id}/status`, {
-				method: "DELETE"
-			})
-			setChangesList((prev) => prev.filter((change) => change.id !== id))
-			setToastMessage("Hesabat silindi.")
-			setShowToast(true)
-			setTimeout(() => setShowToast(false), 4000)
-		} catch (error) {
-			console.error("Failed to delete", error)
+		const response = await fetch(`${API_URL}/api/changes/${id}/status`, {
+			method: "DELETE",
+			credentials: "include"
+		})
+
+		if (!response.ok) {
+			throw new Error(await parseErrorMessage(response, "Failed to delete report"))
 		}
+
+		setChangesList((prev) => prev.filter((change) => change.id !== id))
+		setToastMessage("Hesabat silindi.")
+		setShowToast(true)
+		setTimeout(() => setShowToast(false), 4000)
+	}
+
+	const handleAdminLogin = async (email: string, password: string) => {
+		try {
+			const response = await fetch(`${API_URL}/api/auth/login`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				credentials: "include",
+				body: JSON.stringify({ email, password })
+			})
+
+			if (!response.ok) {
+				return parseErrorMessage(response, "Login failed")
+			}
+
+			setIsAuthenticated(true)
+			setUserRole("admin")
+			setActiveTab("admin")
+			return null
+		} catch (error) {
+			console.error("Failed to login", error)
+			return "Giriş mümkün olmadı. Yenidən cəhd edin."
+		}
+	}
+
+	const handleLogout = async () => {
+		try {
+			await fetch(`${API_URL}/api/auth/logout`, {
+				method: "POST",
+				credentials: "include"
+			})
+		} catch (error) {
+			console.error("Failed to logout cleanly", error)
+		}
+
+		setUserRole("user")
+		setIsAuthenticated(false)
+		window.location.href = "/"
 	}
 
 	const dismissWelcomeRoadmap = () => {
@@ -315,9 +430,7 @@ export default function App() {
 								<div className='h-6 w-px bg-gray-200 hidden sm:block'></div>
 								<button
 									onClick={() => {
-										setUserRole("user")
-										setIsAuthenticated(false)
-										window.location.href = "/"
+										void handleLogout()
 									}}
 									className='text-xs font-semibold text-gray-500 hover:text-gray-800 flex items-center'
 								>
@@ -552,26 +665,31 @@ export default function App() {
 				{showReportForm && selectedReportCoords && (
 					<ReportModal
 						selectedCoords={selectedReportCoords}
-						onClose={() => setShowReportForm(false)}
+						onClose={() => {
+							setShowReportForm(false)
+							setSelectedReportCoords(null)
+						}}
 						onSubmit={handleReportSubmit}
 						existingChanges={changesList}
 						onUpvote={handleUpvote}
 					/>
 				)}
 
-				{isReviewerRoute && !isAuthenticated && (
+				{isReviewerRoute && isAuthLoading && (
+					<div className='absolute inset-0 z-[70] flex items-center justify-center bg-slate-950/45 backdrop-blur-sm'>
+						<div className='inline-flex items-center rounded-full bg-white px-5 py-3 text-sm font-medium text-slate-700 shadow-lg'>
+							<Loader2 className='mr-2 h-4 w-4 animate-spin' /> Sessiya yoxlanılır...
+						</div>
+					</div>
+				)}
+
+				{isReviewerRoute && !isAuthLoading && !isAuthenticated && (
 					<LoginModal
 						onClose={() => {
 							// If they close without logging in, maybe redirect them to home
 							window.location.href = "/"
 						}}
-						onLogin={(role) => {
-							if (role === "admin") {
-								setIsAuthenticated(true)
-								setUserRole("admin")
-								setActiveTab("admin")
-							}
-						}}
+						onLogin={handleAdminLogin}
 					/>
 				)}
 			</main>

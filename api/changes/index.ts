@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node"
 import { neon } from "@neondatabase/serverless"
+import { validateCreateRoadChange } from "../_lib/roadChangeValidation"
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
 	try {
@@ -19,6 +20,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 					...r,
 					type: r.type || "other",
 					date: r.timestamp,
+					status: r.status || "pending",
+					severity: r.severity || "yellow",
 					coordinates: [r.longitude, r.latitude],
 					image: r.image
 				}))
@@ -38,6 +41,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 		}
 
 		if (req.method === "POST") {
+			const validation = validateCreateRoadChange(req.body)
+			if (!validation.ok) {
+				return res.status(400).json({ error: validation.error })
+			}
+
 			const {
 				id,
 				title,
@@ -49,17 +57,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 				timestamp,
 				upvotes,
 				image
-			} = req.body
+			} = validation.data
 			try {
-				try {
-					await sql`ALTER TABLE road_changes ADD COLUMN IF NOT EXISTS type TEXT;`
-					await sql`ALTER TABLE road_changes ADD COLUMN IF NOT EXISTS image TEXT;`
-				} catch (e) {
-					console.log("Could not alter table", e)
-				}
 				await sql`
 					INSERT INTO road_changes (id, title, description, type, severity, status, longitude, latitude, timestamp, upvotes, image)
-					VALUES (${id}, ${title}, ${description}, ${type || "other"}, ${severity}, ${status || "pending"}, ${coordinates[0]}, ${coordinates[1]}, ${timestamp || new Date().toISOString()}, ${upvotes || 0}, ${image || null})
+					VALUES (${id}, ${title}, ${description}, ${type}, ${severity}, ${status}, ${coordinates[0]}, ${coordinates[1]}, ${timestamp}, ${upvotes}, ${image})
 				`
 				return res.status(201).json({ success: true, id })
 			} catch (error: any) {

@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node"
 import { neon } from "@neondatabase/serverless"
+import { validateRoadChangeId } from "../../_lib/roadChangeValidation"
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
 	try {
@@ -13,9 +14,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 		if (req.method === "OPTIONS") return res.status(200).end()
 
 		if (req.method === "PATCH") {
-			const id = req.query.id as string
+			const idResult = validateRoadChangeId(req.query.id)
+			if (!idResult.ok) {
+				return res.status(400).json({ error: idResult.error })
+			}
+
+			const id = idResult.data
 			try {
-				await sql`UPDATE road_changes SET upvotes = upvotes + 1 WHERE id = ${id}`
+				const rows = await sql`
+					UPDATE road_changes
+					SET upvotes = COALESCE(upvotes, 0) + 1
+					WHERE id = ${id}
+					RETURNING id
+				`
+				if (rows.length === 0) {
+					return res.status(404).json({ error: "Change not found" })
+				}
+
 				return res.status(200).json({ success: true })
 			} catch (error: any) {
 				console.error("PATCH Error:", error)

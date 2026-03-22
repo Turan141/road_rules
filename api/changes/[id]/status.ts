@@ -1,5 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node"
 import { neon } from "@neondatabase/serverless"
+import { requireAdminSession } from "../../_lib/auth"
+import { validateRoadChangeId } from "../../_lib/roadChangeValidation"
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
 	if (!process.env.DATABASE_URL) {
@@ -10,8 +12,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
 	if (req.method === "OPTIONS") return res.status(200).end()
 
+	const adminSession = requireAdminSession(req, res)
+	if (!adminSession) {
+		return
+	}
+
+	const idResult = validateRoadChangeId(req.query.id)
+	if (!idResult.ok) {
+		return res.status(400).json({ error: idResult.error })
+	}
+
+	const changeId = idResult.data
+
 	if (req.method === "PATCH") {
-		const { id } = req.query
 		const { status } = req.body
 
 		if (!status || !["approved", "rejected", "pending"].includes(status)) {
@@ -19,12 +32,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 		}
 
 		try {
-			await sql`
+			const rows = await sql`
                 UPDATE road_changes
                 SET status = ${status}
-                WHERE id = ${id as string}
+                WHERE id = ${changeId}
+                RETURNING id
             `
-			return res.status(200).json({ success: true, id, status })
+			if (rows.length === 0) {
+				return res.status(404).json({ error: "Change not found" })
+			}
+
+			return res.status(200).json({ success: true, id: changeId, status })
 		} catch (error: any) {
 			console.error("PATCH Error:", error)
 			return res
@@ -34,14 +52,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 	}
 
 	if (req.method === "DELETE") {
-		const { id } = req.query
-
 		try {
-			await sql`
+			const rows = await sql`
                 DELETE FROM road_changes
-                WHERE id = ${id as string}
+                WHERE id = ${changeId}
+                RETURNING id
             `
-			return res.status(200).json({ success: true, id })
+			if (rows.length === 0) {
+				return res.status(404).json({ error: "Change not found" })
+			}
+
+			return res.status(200).json({ success: true, id: changeId })
 		} catch (error: any) {
 			console.error("DELETE Error:", error)
 			return res

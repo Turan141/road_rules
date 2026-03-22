@@ -20,7 +20,7 @@ export interface RoadChange {
 	coordinates: [number, number] // [longitude, latitude]
 	date: string
 	severity: "red" | "yellow" | "green"
-	status: "approved" | "pending"
+	status: "approved" | "pending" | "rejected"
 	beforeImageUrl?: string
 	afterImageUrl?: string
 	image?: string

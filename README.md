@@ -22,7 +22,7 @@ A modern, minimalistic web application that informs users about recent changes i
 ## Tech Stack
 
 - Frontend: React (Vite), TypeScript, Tailwind CSS
-- Map: Mapbox GL JS
+- Map: MapLibre GL
 - Icons: Lucide React
 
 ## Folder Structure
@@ -39,19 +39,24 @@ A modern, minimalistic web application that informs users about recent changes i
    ```bash
    npm install
    ```
-2. **Setup Mapbox Token**
-   Open `src/features/map/MapboxMap.tsx` and replace `MAPBOX_TOKEN` with your Mapbox access token if needed. (A public default provides limited access).
-3. **Run the App**
+2. **Configure Environment Variables**
+   Copy `.env.example` to `.env` and set the required values:
+   - `DATABASE_URL` for Neon/Postgres
+   - `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `AUTH_SECRET` for reviewer login
+   - `VITE_API_URL` only if frontend and API are served from different origins
+3. **Initialize the Database**
+   Run the SQL from `database/schema.sql` in your Neon/Postgres database before the first deploy.
+4. **Run the App**
    ```bash
    npm run dev
    ```
-4. **Build for Production**
+5. **Build for Production**
    ```bash
    npm run build
    ```
 
-## Next Steps for Production
+## Production Notes
 
-- Create Node/Express backend to fetch live road data.
-- Connect live GPS coordinates inside `useEffect` in `App.tsx`.
-- Connect to Waze or Google Maps APIs for real-time routing issues.
+- Reviewer moderation now uses server-side session cookies. Admin actions require valid auth on the API.
+- Report uploads are validated for type and size before submission.
+- API requests for moderation expect the env variables listed above to be configured in Vercel.
