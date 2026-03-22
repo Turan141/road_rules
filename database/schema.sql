@@ -2,6 +2,7 @@ CREATE TABLE IF NOT EXISTS road_changes (
     id TEXT PRIMARY KEY,
     title TEXT NOT NULL,
     description TEXT NOT NULL,
+    road_name TEXT,
     type TEXT NOT NULL DEFAULT 'other',
     severity TEXT NOT NULL DEFAULT 'yellow',
     status TEXT NOT NULL DEFAULT 'pending',
@@ -11,6 +12,9 @@ CREATE TABLE IF NOT EXISTS road_changes (
     upvotes INTEGER NOT NULL DEFAULT 0,
     image TEXT
 );
+
+ALTER TABLE road_changes
+    ADD COLUMN IF NOT EXISTS road_name TEXT;
 
 CREATE INDEX IF NOT EXISTS road_changes_timestamp_idx
     ON road_changes (timestamp DESC);

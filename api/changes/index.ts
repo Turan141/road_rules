@@ -19,6 +19,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 				const rows = await sql`SELECT * FROM road_changes ORDER BY timestamp DESC`
 				const mapped = rows.map((r: any) => ({
 					...r,
+					roadName: r.road_name || undefined,
 					type: r.type || "other",
 					date: r.timestamp,
 					status: r.status || "pending",
@@ -61,6 +62,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 				id,
 				title,
 				description,
+				roadName,
 				type,
 				severity,
 				status,
@@ -71,12 +73,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 			} = validation.data
 			try {
 				await sql`
-					INSERT INTO road_changes (id, title, description, type, severity, status, longitude, latitude, timestamp, upvotes, image)
-					VALUES (${id}, ${title}, ${description}, ${type}, ${severity}, ${status}, ${coordinates[0]}, ${coordinates[1]}, ${timestamp}, ${upvotes}, ${image})
+					INSERT INTO road_changes (id, title, description, road_name, type, severity, status, longitude, latitude, timestamp, upvotes, image)
+					VALUES (${id}, ${title}, ${description}, ${roadName}, ${type}, ${severity}, ${status}, ${coordinates[0]}, ${coordinates[1]}, ${timestamp}, ${upvotes}, ${image})
 				`
 				return res.status(201).json({ success: true, id })
 			} catch (error: any) {
 				console.error("POST Error:", error)
+				if (
+					error.message &&
+					error.message.includes('column "road_name" of relation "road_changes" does not exist')
+				) {
+					return res.status(500).json({ error: "Database schema is outdated. Apply the latest schema.sql." })
+				}
 				if (
 					error.message &&
 					error.message.includes('relation "road_changes" does not exist')

@@ -53,6 +53,13 @@ export default function Feed({ changes, onSelect }: FeedProps) {
 								{change.title}
 							</h3>
 
+							{change.roadName && (
+								<div className='mb-2 flex items-center text-sm font-medium text-blue-700'>
+									<MapPin className='mr-1 h-4 w-4 shrink-0' />
+									<span className='line-clamp-1'>{change.roadName}</span>
+								</div>
+							)}
+
 							<p className='text-gray-500 text-sm line-clamp-2 mb-4'>
 								{change.description}
 							</p>

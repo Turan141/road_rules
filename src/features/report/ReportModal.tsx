@@ -396,6 +396,11 @@ export default function ReportModal({
 												</span>
 											</div>
 											<div className='flex flex-col mt-2'>
+												{change.roadName && (
+													<span className='text-sm font-medium text-blue-700 line-clamp-1'>
+														{change.roadName}
+													</span>
+												)}
 												<span className='text-sm text-gray-500 line-clamp-1'>
 													{change.description}
 												</span>

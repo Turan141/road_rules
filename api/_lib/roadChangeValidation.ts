@@ -24,6 +24,7 @@ interface CreateRoadChangeInput {
 	id: string
 	title: string
 	description: string
+	roadName: string | null
 	type: string
 	severity: "red" | "yellow" | "green"
 	status: "approved" | "pending"
@@ -103,6 +104,16 @@ export function validateCreateRoadChange(
 		return descriptionResult
 	}
 
+	let roadName: string | null = null
+	if (body.roadName != null) {
+		const roadNameResult = getNonEmptyString(body.roadName, "Road name", 180)
+		if (!roadNameResult.ok) {
+			return roadNameResult
+		}
+
+		roadName = roadNameResult.data
+	}
+
 	if (!Array.isArray(body.coordinates) || body.coordinates.length !== 2) {
 		return { ok: false, error: "Coordinates must contain longitude and latitude" }
 	}
@@ -172,6 +183,7 @@ export function validateCreateRoadChange(
 			id: idResult.data,
 			title: titleResult.data,
 			description: descriptionResult.data,
+			roadName,
 			type,
 			severity: severity as "red" | "yellow" | "green",
 			status: status as "approved" | "pending",
