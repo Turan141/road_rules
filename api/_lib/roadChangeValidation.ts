@@ -19,8 +19,7 @@ const ROAD_CHANGE_STATUSES = new Set(["approved", "pending"])
 const MAX_TITLE_LENGTH = 120
 const MAX_DESCRIPTION_LENGTH = 1000
 const MAX_IMAGE_LENGTH = 300_000
-const IMAGE_DATA_URL_PATTERN =
-	/^data:image\/(png|jpeg|jpg|webp);base64,[a-z0-9+/=]+$/i
+const IMAGE_DATA_URL_PATTERN = /^data:image\/(png|jpeg|jpg|webp);base64,[a-z0-9+/=]+$/i
 
 interface CreateRoadChangeInput {
 	id: string
@@ -126,7 +125,9 @@ export function validateCreateRoadChange(
 		title: titleResult.data,
 		description: descriptionResult.data,
 		roadName,
-		reportMeta: isObject(body.reportMeta) ? (body.reportMeta as ReportMetaInput) : undefined
+		reportMeta: isObject(body.reportMeta)
+			? (body.reportMeta as ReportMetaInput)
+			: undefined
 	})
 	if (abuseError) {
 		return { ok: false, error: abuseError }

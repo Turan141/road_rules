@@ -337,7 +337,11 @@ export default function ReportModal({
 			onClose()
 		} catch (error) {
 			console.error("Hesabat göndərilərkən xəta baş verdi:", error)
-			setSubmitError("Hesabatı göndərmək mümkün olmadı. Zəhmət olmasa yenidən cəhd edin.")
+			setSubmitError(
+				error instanceof Error && error.message.trim()
+					? error.message
+					: "Hesabatı göndərmək mümkün olmadı. Zəhmət olmasa yenidən cəhd edin."
+			)
 		} finally {
 			setIsSubmitting(false)
 		}

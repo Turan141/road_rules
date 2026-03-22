@@ -7,12 +7,19 @@ const CONTACT_PATTERNS = [
 ]
 
 const PROFANITY_PATTERNS = [
-	/\b(?:fuck|fucking|shit|bitch|bastard|dick|porn|nsfw|nude|sex(?:cam)?|blowjob)\b/i,
-	/\b(?:сука|бляд|блят|хуй|хуе|пизд|еба|ебл|пидор|шлюх|секс|порно)\b/i,
-	/\b(?:sik(?:dir)?|amc[ıi]q|qəhbə|fahişə|porno|seks)\b/i
+	/\b(?:fuck|fucking|motherfucker|shit|bullshit|bitch|bastard|asshole|dick|whore|slut|porn|nsfw|nude|sex(?:cam)?|blowjob|boobs?|naked)\b/i,
+	/\b(?:сука|бляд|блят|блять|хуй|хуе|хуйня|пизд|еба|ебл|пидор|пидр|шлюх|мраз|гандон|секс|порно|голая|голый)\b/i,
+	/\b(?:sik(?:dir)?|amc[ıi]q|amina|qəhbə|fahişə|gijd[ıi]llaq|pezeveng|porno|seks|çılpaq|çiplak|yarraq)\b/i,
+	/\b(?:sik|sikerim|amk|amina|orospu|piç|pic|yarak|porno|seks|çıplak|ciplak|mem[ea])\b/i
 ]
 
-const SPAM_PATTERNS = [/(.)\1{6,}/, /(?:\b\w+\b)(?:\s+\1\b){4,}/i]
+const NORMALIZED_PROFANITY_PATTERNS = [
+	/(?:f+u+c+k+|s+h+i+t+|b+i+t+c+h+|p+o+r+n+|n+u+d+e+|s+e+x+)/,
+	/(?:s+u+k+a+|b+l+y+a+[dt]+|x+u+y+|h+u+y+|p+i+z+d+a+|e+b+a+t?)/,
+	/(?:s+i+k+|a+m+c+i+q+|q+e+h+b+e+|f+a+h+i+s+e+|y+a+r+r+a+q+|o+r+o+s+p+u+|p+i+c+)/
+]
+
+const SPAM_PATTERNS = [/([^.\s])\1{6,}/, /\b(\w+)\b(?:\s+\1\b){4,}/i]
 const MIN_FORM_COMPLETION_MS = 2500
 
 interface ReportMetaInput {
@@ -23,6 +30,23 @@ interface ReportMetaInput {
 
 function normalizeWhitespace(value: string) {
 	return value.replace(/\s+/g, " ").trim()
+}
+
+function normalizeForDetection(value: string) {
+	return value
+		.toLowerCase()
+		.normalize("NFKD")
+		.replace(/[\u0300-\u036f]/g, "")
+		.replace(/[0@]/g, "o")
+		.replace(/[1!|]/g, "i")
+		.replace(/[3]/g, "e")
+		.replace(/[4]/g, "a")
+		.replace(/[5$]/g, "s")
+		.replace(/[7]/g, "t")
+		.replace(/[8]/g, "b")
+		.replace(/[^\p{L}\p{N}\s]/gu, "")
+		.replace(/\s+/g, " ")
+		.trim()
 }
 
 function getUppercaseRatio(value: string) {
@@ -74,12 +98,19 @@ export function getReportAbuseError(input: {
 	const description = normalizeWhitespace(input.description)
 	const roadName = normalizeWhitespace(input.roadName || "")
 	const combinedText = [title, description, roadName].filter(Boolean).join(" \n ")
+	const normalizedCombinedText = normalizeForDetection(combinedText)
 
 	if (CONTACT_PATTERNS.some((pattern) => pattern.test(combinedText))) {
 		return "Links and contact details are not allowed in reports"
 	}
 
 	if (PROFANITY_PATTERNS.some((pattern) => pattern.test(combinedText))) {
+		return "Offensive or adult language is not allowed in reports"
+	}
+
+	if (
+		NORMALIZED_PROFANITY_PATTERNS.some((pattern) => pattern.test(normalizedCombinedText))
+	) {
 		return "Offensive or adult language is not allowed in reports"
 	}
 
