@@ -16,7 +16,7 @@ const ROAD_CHANGE_SEVERITIES = new Set(["red", "yellow", "green"])
 const ROAD_CHANGE_STATUSES = new Set(["approved", "pending"])
 const MAX_TITLE_LENGTH = 120
 const MAX_DESCRIPTION_LENGTH = 1000
-const MAX_IMAGE_LENGTH = 900_000
+const MAX_IMAGE_LENGTH = 300_000
 const IMAGE_DATA_URL_PATTERN =
 	/^data:image\/(png|jpeg|jpg|webp|gif);base64,[a-z0-9+/=]+$/i
 

@@ -11,8 +11,9 @@ interface ReportModalProps {
 }
 
 const MAX_IMAGE_SIZE_BYTES = 3 * 1024 * 1024
-const MAX_OUTPUT_IMAGE_BYTES = 550 * 1024
-const MAX_IMAGE_DIMENSION = 1400
+const MAX_OUTPUT_IMAGE_BYTES = 180 * 1024
+const MAX_IMAGE_DIMENSION = 960
+const MIN_IMAGE_DIMENSION = 420
 const ALLOWED_IMAGE_TYPES = new Set(["image/png", "image/jpeg", "image/webp"])
 
 async function loadImageElement(file: File) {
@@ -32,45 +33,74 @@ async function loadImageElement(file: File) {
 	}
 }
 
-function scaleDimensions(width: number, height: number) {
+function scaleDimensions(width: number, height: number, maxDimension: number) {
 	const largestSide = Math.max(width, height)
-	if (largestSide <= MAX_IMAGE_DIMENSION) {
+	if (largestSide <= maxDimension) {
 		return { width, height }
 	}
 
-	const scale = MAX_IMAGE_DIMENSION / largestSide
+	const scale = maxDimension / largestSide
 	return {
 		width: Math.max(1, Math.round(width * scale)),
 		height: Math.max(1, Math.round(height * scale))
 	}
 }
 
-async function compressImageToDataUrl(file: File) {
-	const image = await loadImageElement(file)
-	const dimensions = scaleDimensions(image.naturalWidth, image.naturalHeight)
+function renderCompressedFrame(
+	image: HTMLImageElement,
+	width: number,
+	height: number,
+	quality: number
+) {
 	const canvas = document.createElement("canvas")
-	canvas.width = dimensions.width
-	canvas.height = dimensions.height
+	canvas.width = width
+	canvas.height = height
 
 	const context = canvas.getContext("2d")
 	if (!context) {
 		throw new Error("Canvas is not available")
 	}
 
-	context.drawImage(image, 0, 0, dimensions.width, dimensions.height)
+	context.fillStyle = "#ffffff"
+	context.fillRect(0, 0, width, height)
+	context.imageSmoothingEnabled = true
+	context.imageSmoothingQuality = "high"
+	context.drawImage(image, 0, 0, width, height)
 
-	const qualitySteps = [0.82, 0.72, 0.62, 0.52, 0.45]
-	let bestResult = canvas.toDataURL("image/webp", qualitySteps[0])
+	return canvas.toDataURL("image/webp", quality)
+}
 
-	for (const quality of qualitySteps) {
-		const candidate = canvas.toDataURL("image/webp", quality)
-		bestResult = candidate
-		if (candidate.length <= MAX_OUTPUT_IMAGE_BYTES * 1.37) {
-			break
+async function compressImageToDataUrl(file: File) {
+	const image = await loadImageElement(file)
+	let dimensions = scaleDimensions(
+		image.naturalWidth,
+		image.naturalHeight,
+		MAX_IMAGE_DIMENSION
+	)
+	const qualitySteps = [0.52, 0.4, 0.32, 0.24, 0.18, 0.14]
+	let bestResult = renderCompressedFrame(image, dimensions.width, dimensions.height, 0.32)
+
+	while (true) {
+		for (const quality of qualitySteps) {
+			const candidate = renderCompressedFrame(
+				image,
+				dimensions.width,
+				dimensions.height,
+				quality
+			)
+			bestResult = candidate
+			if (candidate.length <= MAX_OUTPUT_IMAGE_BYTES * 1.37) {
+				return candidate
+			}
 		}
-	}
 
-	return bestResult
+		const nextLargestSide = Math.round(Math.max(dimensions.width, dimensions.height) * 0.8)
+		if (nextLargestSide < MIN_IMAGE_DIMENSION) {
+			return bestResult
+		}
+
+		dimensions = scaleDimensions(dimensions.width, dimensions.height, nextLargestSide)
+	}
 }
 
 export default function ReportModal({
@@ -86,6 +116,7 @@ export default function ReportModal({
 	const [imageBase64, setImageBase64] = useState<string | null>(null)
 	const [loadingAddress, setLoadingAddress] = useState(false)
 	const [isSubmitting, setIsSubmitting] = useState(false)
+	const [isProcessingImage, setIsProcessingImage] = useState(false)
 	const [submitError, setSubmitError] = useState<string | null>(null)
 
 	const getDistanceMeters = (
@@ -214,6 +245,7 @@ export default function ReportModal({
 			setAddress(null)
 			setSubmitError(null)
 			setImageBase64(null)
+			setIsProcessingImage(false)
 		}
 	}, [selectedCoords])
 
@@ -244,6 +276,7 @@ export default function ReportModal({
 			}
 
 			setSubmitError(null)
+			setIsProcessingImage(true)
 			void (async () => {
 				try {
 					const compressedImage = await compressImageToDataUrl(file)
@@ -255,6 +288,8 @@ export default function ReportModal({
 						"Şəkili emal etmək mümkün olmadı. Zəhmət olmasa başqa fayl seçin."
 					)
 					e.target.value = ""
+				} finally {
+					setIsProcessingImage(false)
 				}
 			})()
 		}
@@ -262,7 +297,7 @@ export default function ReportModal({
 
 	const handleSubmit = async (e?: React.FormEvent | React.MouseEvent) => {
 		e?.preventDefault()
-		if (!selectedCoords) return
+		if (!selectedCoords || isProcessingImage) return
 
 		setIsSubmitting(true)
 		setSubmitError(null)
@@ -467,8 +502,11 @@ export default function ReportModal({
 												Foto sübutu yüklə
 											</p>
 											<p className='text-xs text-gray-400 mt-1'>
-												Göndərilmədən əvvəl sıxılır, maksimum 3 MB
+												Baza üçün güclü sıxılır, maksimum 3 MB giriş faylı
 											</p>
+											{isProcessingImage && (
+												<p className='text-xs text-blue-600 mt-2'>Şəkil maksimum dərəcədə sıxılır...</p>
+											)}
 										</>
 									)}
 								</div>
@@ -480,10 +518,14 @@ export default function ReportModal({
 				<div className='p-6 border-t bg-gray-50 rounded-b-2xl shrink-0 space-y-3'>
 					<button
 						onClick={handleSubmit}
-						disabled={isSubmitting}
+						disabled={isSubmitting || isProcessingImage}
 						className='w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-colors shadow-sm focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-70 disabled:cursor-not-allowed flex justify-center items-center'
 					>
-						{isSubmitting ? (
+						{isProcessingImage ? (
+							<>
+								<Loader2 className='w-5 h-5 mr-2 animate-spin' /> Şəkil sıxılır...
+							</>
+						) : isSubmitting ? (
 							<>
 								<Loader2 className='w-5 h-5 mr-2 animate-spin' />
 								Göndərilir...
@@ -494,7 +536,7 @@ export default function ReportModal({
 					</button>
 					<button
 						onClick={onClose}
-						disabled={isSubmitting}
+						disabled={isSubmitting || isProcessingImage}
 						className='w-full py-3 px-4 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-xl font-medium transition-colors disabled:opacity-70'
 					>
 						Ləğv Et
