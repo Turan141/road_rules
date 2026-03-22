@@ -1,4 +1,8 @@
-import { RoadChange, formatRoadChangeDate, getRoadChangeTypeLabel } from "../../data/roadChanges"
+import {
+	RoadChange,
+	formatRoadChangeDate,
+	getRoadChangeTypeLabel
+} from "../../data/roadChanges"
 import { Clock, MapPin } from "lucide-react"
 
 interface FeedProps {

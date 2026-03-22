@@ -59,23 +59,23 @@ export default function AdminDashboard({
 					<div className='grid grid-cols-2 gap-3 sm:grid-cols-4'>
 						<div className='rounded-2xl border border-gray-200 bg-white p-4 shadow-sm'>
 							<div className='flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-400'>
-								<Activity className='h-4 w-4' /> Cəmi giriş
+								<Users className='h-4 w-4' /> Cəmi unikal istifadəçi
 							</div>
 							<div className='mt-3 text-2xl font-semibold text-gray-900'>
-								{analyticsSummary?.totalVisits ?? 0}
+								{analyticsSummary?.totalUniqueVisitors ?? 0}
 							</div>
 						</div>
 						<div className='rounded-2xl border border-gray-200 bg-white p-4 shadow-sm'>
 							<div className='flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-400'>
-								<BarChart3 className='h-4 w-4' /> Bu gün
+								<Activity className='h-4 w-4' /> Bu gün unikal
 							</div>
 							<div className='mt-3 text-2xl font-semibold text-gray-900'>
-								{analyticsSummary?.visitsToday ?? 0}
+								{analyticsSummary?.uniqueVisitorsToday ?? 0}
 							</div>
 						</div>
 						<div className='rounded-2xl border border-gray-200 bg-white p-4 shadow-sm'>
 							<div className='flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-400'>
-								<Users className='h-4 w-4' /> 7 gün unikallar
+								<BarChart3 className='h-4 w-4' /> 7 gün unikallar
 							</div>
 							<div className='mt-3 text-2xl font-semibold text-gray-900'>
 								{analyticsSummary?.uniqueVisitors7d ?? 0}

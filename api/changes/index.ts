@@ -81,9 +81,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 				console.error("POST Error:", error)
 				if (
 					error.message &&
-					error.message.includes('column "road_name" of relation "road_changes" does not exist')
+					error.message.includes(
+						'column "road_name" of relation "road_changes" does not exist'
+					)
 				) {
-					return res.status(500).json({ error: "Database schema is outdated. Apply the latest schema.sql." })
+					return res
+						.status(500)
+						.json({ error: "Database schema is outdated. Apply the latest schema.sql." })
 				}
 				if (
 					error.message &&

@@ -1,8 +1,9 @@
 export interface SiteAnalyticsSummary {
-	totalVisits: number
-	visitsToday: number
+	totalUniqueVisitors: number
+	uniqueVisitorsToday: number
 	uniqueVisitors7d: number
 	activeSessions24h: number
+	totalPageViews: number
 	latestVisitAt: string | null
 	schemaMissing?: boolean
 }
