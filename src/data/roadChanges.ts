@@ -17,6 +17,11 @@ export interface RoadChange {
 	description: string
 	type: RoadChangeType
 	roadName?: string
+	reportMeta?: {
+		honeypot?: string
+		startedAt?: string
+		completedAt?: string
+	}
 	coordinates: [number, number] // [longitude, latitude]
 	date: string
 	severity: "red" | "yellow" | "green"

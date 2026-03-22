@@ -1,3 +1,5 @@
+import { getReportAbuseError } from "./reportAbuseProtection.js"
+
 const ROAD_CHANGE_TYPES = new Set([
 	"other",
 	"one-way",
@@ -18,7 +20,7 @@ const MAX_TITLE_LENGTH = 120
 const MAX_DESCRIPTION_LENGTH = 1000
 const MAX_IMAGE_LENGTH = 300_000
 const IMAGE_DATA_URL_PATTERN =
-	/^data:image\/(png|jpeg|jpg|webp|gif);base64,[a-z0-9+/=]+$/i
+	/^data:image\/(png|jpeg|jpg|webp);base64,[a-z0-9+/=]+$/i
 
 interface CreateRoadChangeInput {
 	id: string
@@ -32,6 +34,12 @@ interface CreateRoadChangeInput {
 	timestamp: string
 	upvotes: number
 	image: string | null
+}
+
+interface ReportMetaInput {
+	honeypot?: unknown
+	startedAt?: unknown
+	completedAt?: unknown
 }
 
 interface ValidationSuccess<T> {
@@ -112,6 +120,16 @@ export function validateCreateRoadChange(
 		}
 
 		roadName = roadNameResult.data
+	}
+
+	const abuseError = getReportAbuseError({
+		title: titleResult.data,
+		description: descriptionResult.data,
+		roadName,
+		reportMeta: isObject(body.reportMeta) ? (body.reportMeta as ReportMetaInput) : undefined
+	})
+	if (abuseError) {
+		return { ok: false, error: abuseError }
 	}
 
 	if (!Array.isArray(body.coordinates) || body.coordinates.length !== 2) {

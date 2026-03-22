@@ -114,12 +114,14 @@ export default function ReportModal({
 }: ReportModalProps) {
 	const [title, setTitle] = useState("")
 	const [description, setDescription] = useState("")
+	const [honeypot, setHoneypot] = useState("")
 	const [address, setAddress] = useState<string | null>(null)
 	const [imageBase64, setImageBase64] = useState<string | null>(null)
 	const [loadingAddress, setLoadingAddress] = useState(false)
 	const [isSubmitting, setIsSubmitting] = useState(false)
 	const [isProcessingImage, setIsProcessingImage] = useState(false)
 	const [submitError, setSubmitError] = useState<string | null>(null)
+	const [formStartedAt, setFormStartedAt] = useState(() => new Date().toISOString())
 
 	const getDistanceMeters = (
 		firstPoint: [number, number],
@@ -244,10 +246,17 @@ export default function ReportModal({
 		} else {
 			setTitle("")
 			setDescription("")
+			setHoneypot("")
 			setAddress(null)
 			setSubmitError(null)
 			setImageBase64(null)
 			setIsProcessingImage(false)
+		}
+	}, [selectedCoords])
+
+	useEffect(() => {
+		if (selectedCoords) {
+			setFormStartedAt(new Date().toISOString())
 		}
 	}, [selectedCoords])
 
@@ -310,6 +319,11 @@ export default function ReportModal({
 			description: description.trim(),
 			type: "other",
 			roadName: address || "Seçilmiş Koordinatlar",
+			reportMeta: {
+				honeypot,
+				startedAt: formStartedAt,
+				completedAt: new Date().toISOString()
+			},
 			coordinates: selectedCoords,
 			date: "İndi",
 			severity: "yellow",
@@ -467,6 +481,18 @@ export default function ReportModal({
 							/>
 						</div>
 
+						<div className='hidden' aria-hidden='true'>
+							<label htmlFor='website-field'>Website</label>
+							<input
+								id='website-field'
+								type='text'
+								autoComplete='website'
+								tabIndex={-1}
+								value={honeypot}
+								onChange={(e) => setHoneypot(e.target.value)}
+							/>
+						</div>
+
 						<div>
 							<label className='block text-sm font-medium text-gray-700 mb-1'>
 								Ətraflı Məlumat
@@ -480,6 +506,9 @@ export default function ReportModal({
 								rows={3}
 								placeholder='Vəziyyəti ətraflı təsvir edin...'
 							/>
+							<p className='mt-1 text-xs text-gray-400'>
+								Link, kontakt və təhqiramiz məzmun qəbul olunmur.
+							</p>
 						</div>
 
 						<div>

@@ -72,6 +72,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 				image
 			} = validation.data
 			try {
+				const duplicateRows = await sql`
+					SELECT id
+					FROM road_changes
+					WHERE LOWER(title) = LOWER(${title})
+					  AND LOWER(description) = LOWER(${description})
+					  AND COALESCE(LOWER(road_name), '') = COALESCE(LOWER(${roadName}), '')
+					  AND timestamp >= NOW() - INTERVAL '30 days'
+					LIMIT 1
+				`
+
+				if (duplicateRows.length > 0) {
+					return res.status(409).json({
+						error: "A similar report was already submitted recently"
+					})
+				}
+
 				await sql`
 					INSERT INTO road_changes (id, title, description, road_name, type, severity, status, longitude, latitude, timestamp, upvotes, image)
 					VALUES (${id}, ${title}, ${description}, ${roadName}, ${type}, ${severity}, ${status}, ${coordinates[0]}, ${coordinates[1]}, ${timestamp}, ${upvotes}, ${image})
