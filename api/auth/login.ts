@@ -6,6 +6,11 @@ import {
 	getAuthConfigStatus,
 	isAuthConfigured
 } from "../_lib/auth.js"
+import {
+	checkAdminLoginCooldown,
+	clearAdminLoginCooldown,
+	recordFailedAdminLogin
+} from "../_lib/adminLoginCooldown.js"
 import { enforceRateLimit } from "../_lib/rateLimit.js"
 
 const FAILED_LOGIN_DELAY_MS = 900
@@ -38,6 +43,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
 	const email = typeof req.body?.email === "string" ? req.body.email.trim() : ""
 	const password = typeof req.body?.password === "string" ? req.body.password : ""
+	const configuredAdminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase() || ""
+	const normalizedEmail = email.toLowerCase()
+	const isRealAdminAccountAttempt = normalizedEmail === configuredAdminEmail && configuredAdminEmail !== ""
 
 	if (process.env.DATABASE_URL) {
 		const sql = neon(process.env.DATABASE_URL)
@@ -52,24 +60,40 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 			return
 		}
 
-		const normalizedEmail = email.toLowerCase() || "unknown"
 		const isAllowedByEmail = await enforceRateLimit(sql, req, res, {
 			scope: "admin-login-email",
 			maxRequests: 5,
 			windowMinutes: 30,
-			resourceKey: `email:${normalizedEmail}`,
+			resourceKey: `email:${normalizedEmail || "unknown"}`,
 			errorMessage: "This admin account is temporarily locked. Please try again later."
 		})
 		if (!isAllowedByEmail) {
 			return
+		}
+
+		if (isRealAdminAccountAttempt) {
+			const cooldownStatus = await checkAdminLoginCooldown(sql, res, normalizedEmail)
+			if (!cooldownStatus.ok) {
+				return res.status(429).json({ error: cooldownStatus.error })
+			}
 		}
 	}
 
 	const authResult = authenticateAdmin(email, password)
 
 	if (!authResult.ok) {
+		if (process.env.DATABASE_URL && isRealAdminAccountAttempt) {
+			const sql = neon(process.env.DATABASE_URL)
+			await recordFailedAdminLogin(sql, normalizedEmail)
+		}
+
 		await delay(FAILED_LOGIN_DELAY_MS)
 		return res.status(401).json({ error: "Invalid email or password" })
+	}
+
+	if (process.env.DATABASE_URL && isRealAdminAccountAttempt) {
+		const sql = neon(process.env.DATABASE_URL)
+		await clearAdminLoginCooldown(sql, normalizedEmail)
 	}
 
 	res.setHeader("Set-Cookie", createAdminSessionCookie(email, req.headers["user-agent"]))

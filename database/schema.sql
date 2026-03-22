@@ -34,6 +34,16 @@ CREATE TABLE IF NOT EXISTS request_rate_limits (
 CREATE INDEX IF NOT EXISTS request_rate_limits_expires_at_idx
     ON request_rate_limits (expires_at);
 
+CREATE TABLE IF NOT EXISTS admin_login_cooldowns (
+    account_key TEXT PRIMARY KEY,
+    failure_count INTEGER NOT NULL DEFAULT 0,
+    last_failed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    lock_until TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS admin_login_cooldowns_lock_until_idx
+    ON admin_login_cooldowns (lock_until);
+
 CREATE TABLE IF NOT EXISTS site_visit_sessions (
     session_hash TEXT PRIMARY KEY,
     visitor_hash TEXT NOT NULL,

@@ -105,7 +105,11 @@ function serializeCookie(token: string, maxAgeSeconds: number) {
 	return `${SESSION_COOKIE_NAME}=${encodeURIComponent(token)}; HttpOnly; Path=/; SameSite=Strict; Max-Age=${maxAgeSeconds}${secureDirective}`
 }
 
-function decodeSessionToken(token: string, secret: string, requestUserAgent?: string): AdminSession | null {
+function decodeSessionToken(
+	token: string,
+	secret: string,
+	requestUserAgent?: string
+): AdminSession | null {
 	const [encodedPayload, signature] = token.split(".")
 	if (!encodedPayload || !signature) {
 		return null

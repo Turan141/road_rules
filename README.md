@@ -60,6 +60,7 @@ A modern, minimalistic web application that informs users about recent changes i
 
 - Reviewer moderation now uses server-side session cookies. Admin actions require valid auth on the API.
 - Admin login is protected by server-side rate limits on both IP and account attempts, and admin sessions are bound to the current user-agent.
+- Repeated failed logins against the real admin account now trigger a separate account cooldown, even beyond the normal rate-limit window.
 - Report uploads are validated for type and size before submission.
 - Free abuse protections are enabled on report submission: profanity/spam filtering, link/contact blocking, honeypot detection, and duplicate-report rejection.
 - API requests for moderation expect the env variables listed above to be configured in Vercel.
