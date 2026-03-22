@@ -45,7 +45,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 	const password = typeof req.body?.password === "string" ? req.body.password : ""
 	const configuredAdminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase() || ""
 	const normalizedEmail = email.toLowerCase()
-	const isRealAdminAccountAttempt = normalizedEmail === configuredAdminEmail && configuredAdminEmail !== ""
+	const isRealAdminAccountAttempt =
+		normalizedEmail === configuredAdminEmail && configuredAdminEmail !== ""
 
 	if (process.env.DATABASE_URL) {
 		const sql = neon(process.env.DATABASE_URL)

@@ -56,7 +56,8 @@ export async function checkAdminLoginCooldown(
 		return {
 			ok: false as const,
 			retryAfterSeconds,
-			error: "This admin account is temporarily locked after repeated failed logins. Please try again later."
+			error:
+				"This admin account is temporarily locked after repeated failed logins. Please try again later."
 		}
 	} catch (error: any) {
 		if (
@@ -91,10 +92,14 @@ export async function recordFailedAdminLogin(sql: SqlClient, email: string) {
 			const lastFailedAt = existingRow.last_failed_at
 				? new Date(String(existingRow.last_failed_at))
 				: null
-			const lockUntil = existingRow.lock_until ? new Date(String(existingRow.lock_until)) : null
+			const lockUntil = existingRow.lock_until
+				? new Date(String(existingRow.lock_until))
+				: null
 
 			const shouldResetFailures =
-				(lockUntil && !Number.isNaN(lockUntil.getTime()) && lockUntil.getTime() <= Date.now()) ||
+				(lockUntil &&
+					!Number.isNaN(lockUntil.getTime()) &&
+					lockUntil.getTime() <= Date.now()) ||
 				(lastFailedAt &&
 					!Number.isNaN(lastFailedAt.getTime()) &&
 					Date.now() - lastFailedAt.getTime() >
