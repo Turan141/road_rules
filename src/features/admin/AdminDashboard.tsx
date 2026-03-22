@@ -3,11 +3,14 @@ import {
 	formatRoadChangeDate,
 	getRoadChangeTypeLabel
 } from "../../data/roadChanges"
-import { Check, X, MapPin } from "lucide-react"
+import { formatAnalyticsDate, SiteAnalyticsSummary } from "../../data/siteAnalytics"
+import { Check, X, MapPin, Activity, Users, Clock3, BarChart3 } from "lucide-react"
 
 interface AdminDashboardProps {
 	pendingChanges: RoadChange[]
 	reviewedChanges: RoadChange[]
+	analyticsSummary: SiteAnalyticsSummary | null
+	isAnalyticsLoading: boolean
 	onApprove: (id: string) => void
 	onReject: (id: string) => void
 	onDelete: (id: string) => void
@@ -16,20 +19,12 @@ interface AdminDashboardProps {
 export default function AdminDashboard({
 	pendingChanges,
 	reviewedChanges,
+	analyticsSummary,
+	isAnalyticsLoading,
 	onApprove,
 	onReject,
 	onDelete
 }: AdminDashboardProps) {
-	if (pendingChanges.length === 0 && reviewedChanges.length === 0) {
-		return (
-			<div className='flex flex-col items-center justify-center h-full p-8 text-center text-gray-500'>
-				<Check className='w-16 h-16 text-gray-300 mb-4' />
-				<h3 className='text-xl font-bold text-gray-700'>Hamısı hazırdır!</h3>
-				<p className='mt-2 text-sm'>Hazırda idarə olunacaq hesabat yoxdur.</p>
-			</div>
-		)
-	}
-
 	return (
 		<div className='p-4 max-w-3xl mx-auto space-y-4 pb-24 h-full overflow-y-auto'>
 			<div className='mb-6'>
@@ -40,6 +35,71 @@ export default function AdminDashboard({
 					İcma tərəfindən təqdim edilən yol qaydaları yeniləmələrini nəzərdən keçirin
 				</p>
 			</div>
+
+			<section className='space-y-3'>
+				<div className='flex items-center justify-between gap-3'>
+					<div>
+						<h3 className='text-sm font-semibold uppercase tracking-wide text-gray-500'>
+							Sayt statistikası
+						</h3>
+						<p className='mt-1 text-xs text-gray-400'>Yalnız admin üçün görünür</p>
+					</div>
+					{analyticsSummary?.latestVisitAt && (
+						<span className='text-xs text-gray-400'>
+							Son giriş: {formatAnalyticsDate(analyticsSummary.latestVisitAt)}
+						</span>
+					)}
+				</div>
+
+				{isAnalyticsLoading ? (
+					<div className='rounded-2xl border border-gray-200 bg-white p-5 text-sm text-gray-500'>
+						Statistika yüklənir...
+					</div>
+				) : (
+					<div className='grid grid-cols-2 gap-3 sm:grid-cols-4'>
+						<div className='rounded-2xl border border-gray-200 bg-white p-4 shadow-sm'>
+							<div className='flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-400'>
+								<Activity className='h-4 w-4' /> Cəmi giriş
+							</div>
+							<div className='mt-3 text-2xl font-semibold text-gray-900'>
+								{analyticsSummary?.totalVisits ?? 0}
+							</div>
+						</div>
+						<div className='rounded-2xl border border-gray-200 bg-white p-4 shadow-sm'>
+							<div className='flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-400'>
+								<BarChart3 className='h-4 w-4' /> Bu gün
+							</div>
+							<div className='mt-3 text-2xl font-semibold text-gray-900'>
+								{analyticsSummary?.visitsToday ?? 0}
+							</div>
+						</div>
+						<div className='rounded-2xl border border-gray-200 bg-white p-4 shadow-sm'>
+							<div className='flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-400'>
+								<Users className='h-4 w-4' /> 7 gün unikallar
+							</div>
+							<div className='mt-3 text-2xl font-semibold text-gray-900'>
+								{analyticsSummary?.uniqueVisitors7d ?? 0}
+							</div>
+						</div>
+						<div className='rounded-2xl border border-gray-200 bg-white p-4 shadow-sm'>
+							<div className='flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-400'>
+								<Clock3 className='h-4 w-4' /> 24 saat aktiv
+							</div>
+							<div className='mt-3 text-2xl font-semibold text-gray-900'>
+								{analyticsSummary?.activeSessions24h ?? 0}
+							</div>
+						</div>
+					</div>
+				)}
+			</section>
+
+			{pendingChanges.length === 0 && reviewedChanges.length === 0 && (
+				<div className='flex flex-col items-center justify-center rounded-3xl border border-dashed border-gray-200 bg-white p-8 text-center text-gray-500'>
+					<Check className='w-16 h-16 text-gray-300 mb-4' />
+					<h3 className='text-xl font-bold text-gray-700'>Hamısı hazırdır!</h3>
+					<p className='mt-2 text-sm'>Hazırda idarə olunacaq hesabat yoxdur.</p>
+				</div>
+			)}
 
 			{pendingChanges.length > 0 && (
 				<section className='space-y-4'>

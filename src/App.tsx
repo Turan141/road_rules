@@ -4,6 +4,7 @@ import {
 	formatRoadChangeDate,
 	getRoadChangeTypeLabel
 } from "./data/roadChanges"
+import { SiteAnalyticsSummary } from "./data/siteAnalytics"
 import MapboxMap from "./features/map/MapboxMap"
 import AlertBar from "./features/alerts/AlertBar"
 import Feed from "./features/feed/Feed"
@@ -24,8 +25,42 @@ import {
 } from "lucide-react"
 
 const API_URL = import.meta.env.VITE_API_URL?.replace(/\/$/, "") ?? ""
+const APP_VERSION = __APP_VERSION__
+const VISITOR_ID_STORAGE_KEY = "yolinfo-visitor-id"
+const SESSION_ID_STORAGE_KEY = "yolinfo-session-id"
 
 export type DateFilter = "all" | "today" | "last-3-days" | "last-week" | "last-month"
+
+function generateAnalyticsId() {
+	if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+		return crypto.randomUUID().replace(/-/g, "")
+	}
+
+	return `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 12)}`
+}
+
+function getOrCreateStorageValue(key: string) {
+	if (typeof window === "undefined") {
+		return generateAnalyticsId()
+	}
+
+	try {
+		const existingValue = window.sessionStorage.getItem(key) || window.localStorage.getItem(key)
+		if (existingValue) {
+			return existingValue
+		}
+
+		const nextValue = generateAnalyticsId()
+		if (key === VISITOR_ID_STORAGE_KEY) {
+			window.localStorage.setItem(key, nextValue)
+		} else {
+			window.sessionStorage.setItem(key, nextValue)
+		}
+		return nextValue
+	} catch {
+		return generateAnalyticsId()
+	}
+}
 
 async function parseErrorMessage(response: Response, fallbackMessage: string) {
 	try {
@@ -68,6 +103,8 @@ export default function App() {
 	const [showToast, setShowToast] = useState(false)
 	const [toastMessage, setToastMessage] = useState("")
 	const [showWelcomeRoadmap, setShowWelcomeRoadmap] = useState(false)
+	const [analyticsSummary, setAnalyticsSummary] = useState<SiteAnalyticsSummary | null>(null)
+	const [isAnalyticsLoading, setIsAnalyticsLoading] = useState(false)
 
 	const getDateAgeInDays = (date?: string) => {
 		if (!date) return null
@@ -134,6 +171,37 @@ export default function App() {
 	}, [])
 
 	useEffect(() => {
+		let isDisposed = false
+
+		const trackVisit = async () => {
+			const visitorId = getOrCreateStorageValue(VISITOR_ID_STORAGE_KEY)
+			const sessionId = getOrCreateStorageValue(SESSION_ID_STORAGE_KEY)
+
+			try {
+				await fetch(`${API_URL}/api/analytics/visit`, {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({
+						visitorId,
+						sessionId,
+						path: window.location.pathname
+					})
+				})
+			} catch (error) {
+				if (!isDisposed) {
+					console.error("Failed to record visit analytics", error)
+				}
+			}
+		}
+
+		void trackVisit()
+
+		return () => {
+			isDisposed = true
+		}
+	}, [])
+
+	useEffect(() => {
 		if (!isReviewerRoute) {
 			setIsAuthLoading(false)
 			return
@@ -176,6 +244,49 @@ export default function App() {
 			isDisposed = true
 		}
 	}, [isReviewerRoute])
+
+	useEffect(() => {
+		if (userRole !== "admin" || !isAuthenticated) {
+			setAnalyticsSummary(null)
+			setIsAnalyticsLoading(false)
+			return
+		}
+
+		let isDisposed = false
+
+		const fetchAnalyticsSummary = async () => {
+			setIsAnalyticsLoading(true)
+			try {
+				const response = await fetch(`${API_URL}/api/analytics/summary`, {
+					credentials: "include"
+				})
+
+				if (!response.ok) {
+					throw new Error(await parseErrorMessage(response, "Failed to fetch analytics"))
+				}
+
+				const summary = (await response.json()) as SiteAnalyticsSummary
+				if (!isDisposed) {
+					setAnalyticsSummary(summary)
+				}
+			} catch (error) {
+				if (!isDisposed) {
+					console.error("Failed to fetch analytics summary", error)
+					setAnalyticsSummary(null)
+				}
+			} finally {
+				if (!isDisposed) {
+					setIsAnalyticsLoading(false)
+				}
+			}
+		}
+
+		void fetchAnalyticsSummary()
+
+		return () => {
+			isDisposed = true
+		}
+	}, [isAuthenticated, userRole])
 
 	useEffect(() => {
 		if (isReviewerRoute) return
@@ -504,6 +615,8 @@ export default function App() {
 					</div>
 				) : (
 					<AdminDashboard
+						analyticsSummary={analyticsSummary}
+						isAnalyticsLoading={isAnalyticsLoading}
 						pendingChanges={changesList.filter((c) => c.status === "pending")}
 						reviewedChanges={changesList.filter((c) => c.status === "approved")}
 						onApprove={handleApprove}
@@ -590,6 +703,10 @@ export default function App() {
 						<Plus className='w-6 h-6' />
 					</button>
 				)}
+
+				<div className='pointer-events-none absolute bottom-4 left-4 z-20 rounded-full border border-slate-200 bg-white/90 px-3 py-1.5 text-xs font-medium text-slate-500 shadow-sm backdrop-blur'>
+					v{APP_VERSION}
+				</div>
 
 				{/* Success Toast */}
 				{showToast && (

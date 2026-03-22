@@ -29,3 +29,23 @@ CREATE TABLE IF NOT EXISTS request_rate_limits (
 
 CREATE INDEX IF NOT EXISTS request_rate_limits_expires_at_idx
     ON request_rate_limits (expires_at);
+
+CREATE TABLE IF NOT EXISTS site_visit_sessions (
+    session_hash TEXT PRIMARY KEY,
+    visitor_hash TEXT NOT NULL,
+    ip_hash TEXT NOT NULL,
+    entry_path TEXT NOT NULL DEFAULT '/',
+    user_agent TEXT NOT NULL,
+    first_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    last_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    hits INTEGER NOT NULL DEFAULT 1
+);
+
+CREATE INDEX IF NOT EXISTS site_visit_sessions_first_seen_idx
+    ON site_visit_sessions (first_seen_at DESC);
+
+CREATE INDEX IF NOT EXISTS site_visit_sessions_last_seen_idx
+    ON site_visit_sessions (last_seen_at DESC);
+
+CREATE INDEX IF NOT EXISTS site_visit_sessions_visitor_hash_idx
+    ON site_visit_sessions (visitor_hash);
