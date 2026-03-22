@@ -78,7 +78,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 					WHERE LOWER(title) = LOWER(${title})
 					  AND LOWER(description) = LOWER(${description})
 					  AND COALESCE(LOWER(road_name), '') = COALESCE(LOWER(${roadName}), '')
-					  AND timestamp >= NOW() - INTERVAL '30 days'
+					  AND (
+						CASE
+							WHEN timestamp::text ~ '^\d{4}-\d{2}-\d{2}'
+							THEN (timestamp::text)::timestamptz
+							ELSE NULL
+						END
+					  ) >= NOW() - INTERVAL '30 days'
 					LIMIT 1
 				`
 
