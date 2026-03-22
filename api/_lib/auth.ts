@@ -2,11 +2,12 @@ import type { VercelRequest, VercelResponse } from "@vercel/node"
 import { createHmac, timingSafeEqual } from "node:crypto"
 
 const SESSION_COOKIE_NAME = "road_rules_admin_session"
-const SESSION_TTL_SECONDS = 60 * 60 * 12
+const SESSION_TTL_SECONDS = 60 * 60 * 4
 
 interface AdminSession {
 	email: string
 	expiresAt: number
+	userAgentHash: string
 }
 
 interface AuthConfigStatus {
@@ -34,6 +35,26 @@ function parseCookies(cookieHeader?: string) {
 
 function signToken(payload: string, secret: string) {
 	return createHmac("sha256", secret).update(payload).digest("base64url")
+}
+
+function getUserAgent(requestUserAgent?: string) {
+	return typeof requestUserAgent === "string" && requestUserAgent.trim()
+		? requestUserAgent.trim()
+		: "unknown"
+}
+
+function hashUserAgent(userAgent: string, secret: string) {
+	return createHmac("sha256", secret).update(`ua:${userAgent}`).digest("base64url")
+}
+
+function safeCompareStrings(left: string, right: string) {
+	const leftBuffer = Buffer.from(left)
+	const rightBuffer = Buffer.from(right)
+	if (leftBuffer.length !== rightBuffer.length) {
+		return false
+	}
+
+	return timingSafeEqual(leftBuffer, rightBuffer)
 }
 
 function getAuthConfig() {
@@ -84,7 +105,7 @@ function serializeCookie(token: string, maxAgeSeconds: number) {
 	return `${SESSION_COOKIE_NAME}=${encodeURIComponent(token)}; HttpOnly; Path=/; SameSite=Strict; Max-Age=${maxAgeSeconds}${secureDirective}`
 }
 
-function decodeSessionToken(token: string, secret: string): AdminSession | null {
+function decodeSessionToken(token: string, secret: string, requestUserAgent?: string): AdminSession | null {
 	const [encodedPayload, signature] = token.split(".")
 	if (!encodedPayload || !signature) {
 		return null
@@ -106,8 +127,14 @@ function decodeSessionToken(token: string, secret: string): AdminSession | null 
 		if (
 			typeof payload?.email !== "string" ||
 			typeof payload?.expiresAt !== "number" ||
+			typeof payload?.userAgentHash !== "string" ||
 			payload.expiresAt <= Date.now()
 		) {
+			return null
+		}
+
+		const expectedUserAgentHash = hashUserAgent(getUserAgent(requestUserAgent), secret)
+		if (!safeCompareStrings(payload.userAgentHash, expectedUserAgentHash)) {
 			return null
 		}
 
@@ -127,14 +154,17 @@ export function authenticateAdmin(email: string, password: string) {
 		return { ok: false, reason: "Admin auth is not configured" }
 	}
 
-	if (email !== config.adminEmail || password !== config.adminPassword) {
+	if (
+		!safeCompareStrings(email, config.adminEmail) ||
+		!safeCompareStrings(password, config.adminPassword)
+	) {
 		return { ok: false, reason: "Invalid email or password" }
 	}
 
 	return { ok: true }
 }
 
-export function createAdminSessionCookie(email: string) {
+export function createAdminSessionCookie(email: string, requestUserAgent?: string) {
 	const config = getAuthConfig()
 	if (!config) {
 		throw new Error("Admin auth is not configured")
@@ -142,7 +172,8 @@ export function createAdminSessionCookie(email: string) {
 
 	const session: AdminSession = {
 		email,
-		expiresAt: Date.now() + SESSION_TTL_SECONDS * 1000
+		expiresAt: Date.now() + SESSION_TTL_SECONDS * 1000,
+		userAgentHash: hashUserAgent(getUserAgent(requestUserAgent), config.authSecret)
 	}
 	const encodedPayload = Buffer.from(JSON.stringify(session), "utf8").toString(
 		"base64url"
@@ -168,7 +199,7 @@ export function getAdminSession(req: VercelRequest) {
 		return null
 	}
 
-	return decodeSessionToken(token, config.authSecret)
+	return decodeSessionToken(token, config.authSecret, req.headers["user-agent"])
 }
 
 export function requireAdminSession(req: VercelRequest, res: VercelResponse) {
