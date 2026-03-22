@@ -9,6 +9,13 @@ interface AdminSession {
 	expiresAt: number
 }
 
+interface AuthConfigStatus {
+	isConfigured: boolean
+	missing: string[]
+	hasAdminSecret: boolean
+	hasAuthSecretAlias: boolean
+}
+
 function parseCookies(cookieHeader?: string) {
 	if (!cookieHeader) {
 		return {}
@@ -39,6 +46,33 @@ function getAuthConfig() {
 	}
 
 	return { adminEmail, adminPassword, authSecret }
+}
+
+export function getAuthConfigStatus(): AuthConfigStatus {
+	const hasAdminEmail = Boolean(process.env.ADMIN_EMAIL)
+	const hasAdminPassword = Boolean(process.env.ADMIN_PASSWORD)
+	const hasAdminSecret = Boolean(process.env.ADMIN_SECRET)
+	const hasAuthSecretAlias = Boolean(process.env.AUTH_SECRET)
+	const missing: string[] = []
+
+	if (!hasAdminEmail) {
+		missing.push("ADMIN_EMAIL")
+	}
+
+	if (!hasAdminPassword) {
+		missing.push("ADMIN_PASSWORD")
+	}
+
+	if (!hasAdminSecret && !hasAuthSecretAlias) {
+		missing.push("ADMIN_SECRET or AUTH_SECRET")
+	}
+
+	return {
+		isConfigured: missing.length === 0,
+		missing,
+		hasAdminSecret,
+		hasAuthSecretAlias
+	}
 }
 
 function isSecureCookie() {
@@ -84,7 +118,7 @@ function decodeSessionToken(token: string, secret: string): AdminSession | null 
 }
 
 export function isAuthConfigured() {
-	return Boolean(getAuthConfig())
+	return getAuthConfigStatus().isConfigured
 }
 
 export function authenticateAdmin(email: string, password: string) {

@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from "@vercel/node"
 import {
 	authenticateAdmin,
 	createAdminSessionCookie,
+	getAuthConfigStatus,
 	isAuthConfigured
 } from "../_lib/auth.js"
 
@@ -18,7 +19,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 	}
 
 	if (!isAuthConfigured()) {
-		return res.status(503).json({ error: "Admin auth is not configured" })
+		const status = getAuthConfigStatus()
+		return res.status(503).json({
+			error: "Admin auth is not configured",
+			missing: status.missing,
+			hasAdminSecret: status.hasAdminSecret,
+			hasAuthSecretAlias: status.hasAuthSecretAlias
+		})
 	}
 
 	const email = typeof req.body?.email === "string" ? req.body.email.trim() : ""

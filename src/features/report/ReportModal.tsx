@@ -94,7 +94,9 @@ async function compressImageToDataUrl(file: File) {
 			}
 		}
 
-		const nextLargestSide = Math.round(Math.max(dimensions.width, dimensions.height) * 0.8)
+		const nextLargestSide = Math.round(
+			Math.max(dimensions.width, dimensions.height) * 0.8
+		)
 		if (nextLargestSide < MIN_IMAGE_DIMENSION) {
 			return bestResult
 		}
@@ -505,7 +507,9 @@ export default function ReportModal({
 												Baza üçün güclü sıxılır, maksimum 3 MB giriş faylı
 											</p>
 											{isProcessingImage && (
-												<p className='text-xs text-blue-600 mt-2'>Şəkil maksimum dərəcədə sıxılır...</p>
+												<p className='text-xs text-blue-600 mt-2'>
+													Şəkil maksimum dərəcədə sıxılır...
+												</p>
 											)}
 										</>
 									)}
