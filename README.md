@@ -42,7 +42,8 @@ A modern, minimalistic web application that informs users about recent changes i
 2. **Configure Environment Variables**
    Copy `.env.example` to `.env` and set the required values:
    - `DATABASE_URL` for Neon/Postgres
-   - `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `AUTH_SECRET` for reviewer login
+   - `ADMIN_EMAIL`, `ADMIN_PASSWORD`, and `ADMIN_SECRET` for reviewer login
+   - `AUTH_SECRET` is also supported as a backward-compatible alias for `ADMIN_SECRET`
    - `VITE_API_URL` only if frontend and API are served from different origins
 3. **Initialize the Database**
    Run the SQL from `database/schema.sql` in your Neon/Postgres database before the first deploy.

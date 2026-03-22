@@ -32,7 +32,7 @@ function signToken(payload: string, secret: string) {
 function getAuthConfig() {
 	const adminEmail = process.env.ADMIN_EMAIL
 	const adminPassword = process.env.ADMIN_PASSWORD
-	const authSecret = process.env.AUTH_SECRET
+	const authSecret = process.env.ADMIN_SECRET || process.env.AUTH_SECRET
 
 	if (!adminEmail || !adminPassword || !authSecret) {
 		return null
